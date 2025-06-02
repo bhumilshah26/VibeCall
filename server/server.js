@@ -24,8 +24,10 @@ app.use(express.json());
 
 app.use('/api/rooms', roomRoutes);
 
+// function to handle the actual socket 
 socketHandler(io);
 
+// function to connect to the database
 mongoose.connect(process.env.MONGO_URI, {})
 .then(() => {
     console.log('Mongo DB Connected');
@@ -33,4 +35,4 @@ mongoose.connect(process.env.MONGO_URI, {})
         console.log(`server is running on port ${process.env.PORT}`);
     })
 })
-.catch(err => console.log(err));
+.catch(err => console.log("Unable to connect to the database: ", err));

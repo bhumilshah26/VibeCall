@@ -1,23 +1,27 @@
-import logo from './logo.svg';
+import React, { useState, useEffect } from 'react';
 import './App.css';
+import Sidebar from './pages/components/Sidebar';
+import Dashboard from './pages/Dashboard';
 
 function App() {
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'b') {
+        event.preventDefault(); // Prevent default browser behavior
+        setIsSidebarVisible(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="flex min-h-screen bg-gray-900">
+      {isSidebarVisible && <Sidebar />}
+      <Dashboard />
     </div>
   );
 }
