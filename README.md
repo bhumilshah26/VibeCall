@@ -1,4 +1,4 @@
-# VibeCALL 🎥📚🧘‍♂️  
+# VibeCall 🎥📚🧘‍♂️  
 A MERN-based video chat platform where users can **create or join rooms** for focused activities like **yoga**, **studying**, **reading**, **quizzing**, and much more.
 
 ## 🚀 Features
@@ -42,7 +42,7 @@ CLIENT_URL=
 
 ###  💻  Frontend (Client)
 ```bash
-cd server
+cd client
 npm install
 ```
 ```.env
