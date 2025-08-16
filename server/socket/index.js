@@ -1,29 +1,31 @@
 module.exports = function (io) {
-    const rooms = new Map(); // Store room participants
+    const rooms = new Map(); // Store room participants by room code
+    const userRooms = new Map(); // Store which room each user is in
 
     io.on('connection', socket => {
         console.log(`User connected: ${socket.id}`);
 
-        socket.on('join-room', ({ roomId, userName }) => {
-            // Join the socket room
-            socket.join(roomId);
+        socket.on('join-room', ({ roomCode, userName }) => {
+            // Join the socket room using room code
+            socket.join(roomCode);
             
             // Initialize room if it doesn't exist
-            if (!rooms.has(roomId)) {
-                rooms.set(roomId, new Set());
+            if (!rooms.has(roomCode)) {
+                rooms.set(roomCode, new Set());
             }
             
             // Add user to room participants
-            rooms.get(roomId).add(socket.id);
+            rooms.get(roomCode).add(socket.id);
+            userRooms.set(socket.id, roomCode);
             
             // Notify others in the room
-            socket.to(roomId).emit('user-joined', { userId: socket.id, userName });
+            socket.to(roomCode).emit('user-joined', { userId: socket.id, userName });
             
             // Send list of existing participants to the new user
-            const participants = Array.from(rooms.get(roomId));
+            const participants = Array.from(rooms.get(roomCode));
             socket.emit('existing-participants', { participants });
             
-            console.log(`User ${socket.id} joined room ${roomId}`);
+            console.log(`User ${socket.id} joined room ${roomCode}`);
         });
 
         // Handle call initiation
@@ -54,36 +56,36 @@ module.exports = function (io) {
         });
 
         // Handle room leaving
-        socket.on('leave-room', ({ roomId }) => {
-            handleUserLeaving(socket, roomId);
+        socket.on('leave-room', ({ roomCode }) => {
+            handleUserLeaving(socket, roomCode);
         });
 
         // Handle disconnection
         socket.on('disconnecting', () => {
-            // Find and leave all rooms the user was in
-            for (const [roomId, participants] of rooms.entries()) {
-                if (participants.has(socket.id)) {
-                    handleUserLeaving(socket, roomId);
-                }
+            // Find and leave the room the user was in
+            const roomCode = userRooms.get(socket.id);
+            if (roomCode) {
+                handleUserLeaving(socket, roomCode);
             }
             console.log(`User disconnected: ${socket.id}`);
         });
 
-        function handleUserLeaving(socket, roomId) {
-            if (rooms.has(roomId)) {
+        function handleUserLeaving(socket, roomCode) {
+            if (rooms.has(roomCode)) {
                 // Remove user from room participants
-                rooms.get(roomId).delete(socket.id);
+                rooms.get(roomCode).delete(socket.id);
+                userRooms.delete(socket.id);
                 
                 // If room is empty, delete it
-                if (rooms.get(roomId).size === 0) {
-                    rooms.delete(roomId);
+                if (rooms.get(roomCode).size === 0) {
+                    rooms.delete(roomCode);
                 }
                 
                 // Notify others in the room
-                socket.to(roomId).emit('user-left', { userId: socket.id });
-                socket.leave(roomId);
+                socket.to(roomCode).emit('user-left', { userId: socket.id });
+                socket.leave(roomCode);
                 
-                console.log(`User ${socket.id} left room ${roomId}`);
+                console.log(`User ${socket.id} left room ${roomCode}`);
             }
         }
     });
