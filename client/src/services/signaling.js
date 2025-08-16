@@ -7,7 +7,7 @@ class SignalingService {
     this.roomCode = null;
   }
 
-  connect(serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5000') {
+  connect(serverUrl = process.env.SERVER_API_URL) {
     this.socket = io(serverUrl);
 
     this.socket.on('connect', () => {
