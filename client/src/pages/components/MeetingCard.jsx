@@ -1,60 +1,130 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faUsers,
-  faClock,
-  faFileAlt
+  faUsers, 
+  faClock, 
+  faBullseye, 
+  faCopy,
+  faCalendar,
+  faPlay
 } from '@fortawesome/free-solid-svg-icons';
 
-const MeetingCard = ({ meeting, onJoinRequest }) => (
-  <div
-    onClick={() => meeting.isLive && onJoinRequest(meeting)}
-    className={`
-      relative overflow-hidden rounded-lg p-6 cursor-pointer
-      backdrop-blur-md bg-white/10
-      border border-white/20
-      transform transition-all duration-300
-      ${meeting.isLive ? 'hover:scale-105' : 'hover:bg-white/15'}
-      group
-    `}
-  >
-    <div className="relative z-10">
-      <div className="flex justify-between items-start mb-4">
-        <h3 className="text-xl font-semibold text-white group-hover:opacity-0 transition-opacity">{meeting.name}</h3>
-        {meeting.isLive && (
-          <span className="bg-red-500 text-white text-xs px-2 py-1 rounded group-hover:opacity-0 transition-opacity">LIVE</span>
-        )}
+const MeetingCard = ({ meeting, onJoinRequest }) => {
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(meeting.code);
+    // You could add a toast notification here
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getCategoryColor = (category) => {
+    const colors = {
+      'Study': 'bg-blue-100 text-blue-800',
+      'Work': 'bg-green-100 text-green-800',
+      'Music': 'bg-purple-100 text-purple-800',
+      'Business': 'bg-indigo-100 text-indigo-800',
+      'Fitness': 'bg-red-100 text-red-800',
+      'Creative': 'bg-pink-100 text-pink-800',
+      'Technology': 'bg-gray-100 text-gray-800',
+      'Language': 'bg-yellow-100 text-yellow-800',
+      'Other': 'bg-gray-100 text-gray-800'
+    };
+    return colors[category] || colors['Other'];
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+      {/* Header */}
+      <div className="p-4 border-b border-gray-100">
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="text-lg font-semibold text-gray-800 line-clamp-2">
+            {meeting.name}
+          </h3>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(meeting.category)}`}>
+            {meeting.category}
+          </span>
+        </div>
+        
+        {/* Focus Goal */}
+        <div className="flex items-start gap-2 mb-3">
+          <FontAwesomeIcon icon={faBullseye} className="text-blue-500 mt-1 text-sm" />
+          <p className="text-sm text-gray-600 line-clamp-2">
+            {meeting.focusGoal}
+          </p>
+        </div>
+
+        {/* Room Code */}
+        <div className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 font-medium">Room Code:</span>
+            <span className="font-mono text-lg font-bold text-gray-800 tracking-wider">
+              {meeting.code}
+            </span>
+          </div>
+          <button
+            onClick={handleCopyCode}
+            className="p-1 text-gray-500 hover:text-gray-700 transition-colors"
+            title="Copy room code"
+          >
+            <FontAwesomeIcon icon={faCopy} className="text-sm" />
+          </button>
+        </div>
       </div>
-      
-      <div className="text-gray-300 mb-2 group-hover:opacity-0 transition-opacity">{meeting.category}</div>
-      
-      {/* Hover Information */}
-      <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-        {meeting.isLive ? (
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-2 text-xl">
-              <FontAwesomeIcon icon={faUsers} className="text-blue-400" />
-              <span className="text-white">{meeting.activePeople}</span>
-            </div>
-            <p className="text-gray-300 mt-2">{meeting.purpose}</p>
-          </div>
-        ) : (
-          <div className="text-center p-4">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <FontAwesomeIcon icon={faClock} className="text-yellow-400" />
-              <span className="text-white">
-                {new Date(meeting.scheduledTime).toLocaleString()}
-              </span>
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <FontAwesomeIcon icon={faFileAlt} className="text-green-400" />
-              <span className="text-white">{meeting.purpose}</span>
-            </div>
+
+      {/* Content */}
+      <div className="p-4">
+        {/* Agenda */}
+        {meeting.agenda && (
+          <div className="mb-3">
+            <p className="text-sm text-gray-600 line-clamp-2">
+              {meeting.agenda}
+            </p>
           </div>
         )}
+
+        {/* Scheduled Time */}
+        {meeting.scheduledAt && (
+          <div className="flex items-center gap-2 mb-3 text-sm text-gray-600">
+            <FontAwesomeIcon icon={faCalendar} />
+            <span>{formatDate(meeting.scheduledAt)}</span>
+          </div>
+        )}
+
+        {/* Stats */}
+        <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+          <div className="flex items-center gap-2">
+            <FontAwesomeIcon icon={faUsers} />
+            <span>{meeting.participantCount || 0} participants</span>
+          </div>
+          {meeting.isLive && (
+            <div className="flex items-center gap-1 text-green-600">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="font-medium">Live</span>
+            </div>
+          )}
+        </div>
+
+        {/* Join Button */}
+        <button
+          onClick={() => onJoinRequest(meeting)}
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+        >
+          <FontAwesomeIcon icon={faPlay} />
+          {meeting.isLive ? 'Join Session' : 'Join Room'}
+        </button>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default MeetingCard; 

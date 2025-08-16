@@ -14,13 +14,17 @@ import {
   faMicrophoneSlash,
   faVideoSlash,
   faExpand,
-  faCompress
+  faCompress,
+  faPlus,
+  faSignInAlt
 } from '@fortawesome/free-solid-svg-icons';
 import webRTCService from '../services/webRTC';
 import signalingService from '../services/signaling';
 import VideoConference from './components/VideoConference';
 import MeetingCard from './components/MeetingCard';
 import ConfirmationDialog from './components/ConfirmationDialog';
+import CreateRoomModal from './components/CreateRoomModal';
+import JoinRoomModal from './components/JoinRoomModal';
 
 const Dashboard = () => {
   const [selectedMeeting, setSelectedMeeting] = useState(null);
@@ -40,59 +44,29 @@ const Dashboard = () => {
   const [meetingToJoin, setMeetingToJoin] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const meetingContainerRef = useRef(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Simulated meetings data
-  useEffect(() => {
-    setMeetings([
-    {
-      id: 1,
-        name: "Study Group - Mathematics",
-        isLive: true,
-        category: "Study",
-        activePeople: 6,
-        purpose: "Advanced Calculus Discussion"
-    },
-    {
-      id: 2,
-        name: "Music Production Workshop",
-        isLive: true,
-        category: "Music",
-        activePeople: 4,
-        purpose: "Electronic Music Production Tips"
-    },
-    {
-      id: 3,
-        name: "Business Strategy Meeting",
-        isLive: false,
-        category: "Business",
-        scheduledTime: "2024-03-20T15:00",
-        purpose: "Q2 Planning Discussion"
-      },
-      {
-        id: 4,
-        name: "Knowledge Sharing Session",
-        isLive: false,
-        category: "General Knowledge",
-        scheduledTime: "2024-03-21T10:00",
-        purpose: "Latest Tech Trends Discussion"
-      },
-      {
-        id: 5,
-        name: "Study Group - Physics",
-        isLive: true,
-        category: "Study",
-        activePeople: 3,
-        purpose: "Quantum Mechanics Basics"
-      },
-      {
-        id: 6,
-        name: "Business Networking",
-        isLive: false,
-        category: "Business",
-        scheduledTime: "2024-03-22T14:00",
-        purpose: "Startup Networking Event"
+  // Fetch rooms from API
+  const fetchRooms = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/rooms`);
+      if (response.ok) {
+        const rooms = await response.json();
+        setMeetings(rooms);
+      } else {
+        console.error('Failed to fetch rooms');
       }
-    ]);
+    } catch (error) {
+      console.error('Error fetching rooms:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRooms();
   }, []);
 
   useEffect(() => {
@@ -160,7 +134,7 @@ const Dashboard = () => {
         await initializeMedia();
       }
       
-      await signalingService.joinRoom(meetingToJoin.id);
+      await signalingService.joinRoom(meetingToJoin.code);
       setSelectedMeeting(meetingToJoin);
       setShowJoinConfirmation(false);
       setMeetingToJoin(null);
@@ -209,6 +183,15 @@ const Dashboard = () => {
       console.error('Error toggling video:', error);
     }
   }, [isVideoOff]);
+
+  const handleCreateRoom = (newRoom) => {
+    setMeetings(prev => [newRoom, ...prev]);
+  };
+
+  const handleJoinRoom = (room) => {
+    setMeetingToJoin(room);
+    setShowJoinConfirmation(true);
+  };
 
   const MacOSButtons = ({ onClose }) => (
     <div className="flex gap-2">
@@ -347,6 +330,19 @@ const Dashboard = () => {
               </div>
             </div>
           ))}
+
+        {/* Empty slots for grid */}
+        {Array.from({ length: Math.max(0, 6 - remoteStreams.size - 1) }).map((_, index) => (
+          <div
+            key={`empty-${index}`}
+            className="aspect-video rounded-lg overflow-hidden relative backdrop-blur-md bg-white/5 border border-white/10 flex items-center justify-center"
+          >
+            <div className="text-white/30 text-center">
+              <FontAwesomeIcon icon={faUsers} className="text-2xl mb-2" />
+              <p className="text-sm">Waiting for participants...</p>
+            </div>
+          </div>
+        ))}
         </div>
 
       {/* Control Bar */}
@@ -415,9 +411,28 @@ const Dashboard = () => {
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
           <h2 className="text-2xl font-bold text-white">
-            {selectedMeeting ? 'Current Session' : 'Available Meetings'}
+            {selectedMeeting ? 'Current Session' : 'Focus Rooms'}
           </h2>
         </div>
+        
+        {!selectedMeeting && (
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowJoinModal(true)}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+            >
+              <FontAwesomeIcon icon={faSignInAlt} />
+              Join Room
+            </button>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <FontAwesomeIcon icon={faPlus} />
+              Create Room
+            </button>
+          </div>
+        )}
       </div>
 
       {selectedMeeting ? (
@@ -434,15 +449,35 @@ const Dashboard = () => {
           isMaximized={isMaximized}
         />
       ) : (
-      <div className="grid grid-cols-3 gap-6">
-        {meetings.map((meeting) => (
-          <MeetingCard 
-            key={meeting.id} 
-            meeting={meeting} 
-            onJoinRequest={handleJoinRequest}
-          />
-        ))}
-      </div>
+        <>
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-white text-lg">Loading rooms...</div>
+            </div>
+          ) : meetings.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-white text-lg mb-4">No focus rooms available</div>
+              <p className="text-gray-400 mb-6">Create your first focus room to get started!</p>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 mx-auto"
+              >
+                <FontAwesomeIcon icon={faPlus} />
+                Create Your First Room
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {meetings.map((meeting) => (
+                <MeetingCard 
+                  key={meeting._id || meeting.id} 
+                  meeting={meeting} 
+                  onJoinRequest={handleJoinRequest}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Join Confirmation Dialog */}
@@ -453,7 +488,7 @@ const Dashboard = () => {
           setMeetingToJoin(null);
         }}
         onConfirm={handleJoinConfirmed}
-        title="Join Meeting"
+        title="Join Focus Room"
         message={`Are you sure you want to join "${meetingToJoin?.name}"? This will activate your camera and microphone.`}
         confirmText="Join"
         cancelText="Cancel"
@@ -468,6 +503,20 @@ const Dashboard = () => {
         message="Are you sure you want to leave this meeting? Your connection will be terminated."
         confirmText="Leave"
         cancelText="Stay"
+      />
+
+      {/* Create Room Modal */}
+      <CreateRoomModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreateRoom={handleCreateRoom}
+      />
+
+      {/* Join Room Modal */}
+      <JoinRoomModal
+        isOpen={showJoinModal}
+        onClose={() => setShowJoinModal(false)}
+        onJoinRoom={handleJoinRoom}
       />
     </div>
   );

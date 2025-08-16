@@ -4,10 +4,10 @@ import webRTCService from './webRTC';
 class SignalingService {
   constructor() {
     this.socket = null;
-    this.roomId = null;
+    this.roomCode = null;
   }
 
-  connect(serverUrl = process.env.SERVER_URL) {
+  connect(serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5000') {
     this.socket = io(serverUrl);
 
     this.socket.on('connect', () => {
@@ -64,13 +64,13 @@ class SignalingService {
     };
   }
 
-  async joinRoom(roomId) {
+  async joinRoom(roomCode) {
     if (!this.socket) {
       throw new Error('Socket connection not established');
     }
 
-    this.roomId = roomId;
-    this.socket.emit('join-room', { roomId });
+    this.roomCode = roomCode;
+    this.socket.emit('join-room', { roomCode, userName: 'User' + Math.random().toString(36).substr(2, 5) });
   }
 
   async initiateCallToUser(userId) {
@@ -86,9 +86,9 @@ class SignalingService {
   }
 
   leaveRoom() {
-    if (this.socket && this.roomId) {
-      this.socket.emit('leave-room', { roomId: this.roomId });
-      this.roomId = null;
+    if (this.socket && this.roomCode) {
+      this.socket.emit('leave-room', { roomCode: this.roomCode });
+      this.roomCode = null;
     }
   }
 
