@@ -28,7 +28,9 @@ const CreateRoomModal = ({ isOpen, onClose, onCreateRoom }) => {
     e.preventDefault();
     
     try {
-      const response = await fetch(`${process.env.SERVER_API_URL}/api/rooms/create`, {
+      const url = `${process.env.REACT_APP_API_URL}/api/rooms/create`;
+      console.log("URL: ", url);
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
