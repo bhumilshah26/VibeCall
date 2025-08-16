@@ -51,7 +51,7 @@ const Dashboard = () => {
   // Fetch rooms from API
   const fetchRooms = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/rooms`);
+      const response = await fetch(`${process.env.SERVER_API_URL || 'http://localhost:5000'}/api/rooms`);
       if (response.ok) {
         const rooms = await response.json();
         setMeetings(rooms);
