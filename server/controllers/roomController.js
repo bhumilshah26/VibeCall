@@ -2,19 +2,20 @@ const Room = require('../models/Room')
 const {v4:uuidv4 } = require('uuid')
 
 const createRoom = async (req, res) => {
-    const  { name, agenda, scheduledAt, focusGoal, category } = req.body;
+    const  { name, focusGoal, category, agenda, scheduledAt } = req.body;
     const code = uuidv4().slice(0, 6).toUpperCase();
 
     try {
         const room = await Room.create({ 
             code, 
             name, 
-            agenda, 
-            scheduledAt, 
             focusGoal, 
             category,
+            agenda, 
+            scheduledAt, 
             isActive: true,
-            participantCount: 0
+            participantCount: 0,
+            owner: req.body.owner || 'Anonymous' // Add owner field
         });
         res.status(200).json(room);
     } catch (e) {
@@ -65,4 +66,51 @@ const getRoomByCode = async (req, res) => {
     }
 };
 
-module.exports = { createRoom, allRooms, joinRoom, getRoomByCode };
+const deleteRoom = async (req, res) => {
+    const { code } = req.params;
+    
+    try {
+        const room = await Room.findOne({ code, isActive: true });
+        if (!room) {
+            return res.status(404).json({ error: "Room not found" });
+        }
+        
+        // Soft delete - mark as inactive
+        room.isActive = false;
+        await room.save();
+        
+        res.status(200).json({ message: "Room deleted successfully" });
+    } catch (e) {
+        res.status(500).json({ error: "Failed to delete room" });
+    }
+};
+
+const leaveRoom = async (req, res) => {
+    const { code } = req.params;
+    
+    try {
+        const room = await Room.findOne({ code, isActive: true });
+        if (!room) {
+            return res.status(404).json({ error: "Room not found" });
+        }
+        
+        // Decrement participant count (ensure it doesn't go below 0)
+        if (room.participantCount > 0) {
+            room.participantCount -= 1;
+            await room.save();
+        }
+        
+        res.status(200).json({ message: "Left room successfully" });
+    } catch (e) {
+        res.status(500).json({ error: "Failed to leave room" });
+    }
+};
+
+module.exports = { 
+    createRoom, 
+    allRooms, 
+    joinRoom, 
+    getRoomByCode, 
+    deleteRoom, 
+    leaveRoom 
+};

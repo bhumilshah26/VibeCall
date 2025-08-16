@@ -16,7 +16,8 @@ import {
   faExpand,
   faCompress,
   faPlus,
-  faSignInAlt
+  faSignInAlt,
+  faTrash
 } from '@fortawesome/free-solid-svg-icons';
 import webRTCService from '../services/webRTC';
 import signalingService from '../services/signaling';
@@ -47,11 +48,12 @@ const Dashboard = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState('User' + Math.random().toString(36).substr(2, 5));
 
   // Fetch rooms from API
   const fetchRooms = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/rooms`);
       if (response.ok) {
         const rooms = await response.json();
         setMeetings(rooms);
@@ -149,7 +151,21 @@ const Dashboard = () => {
     setShowLeaveConfirmation(true);
   };
 
-  const handleLeaveConfirmed = () => {
+  const handleLeaveConfirmed = async () => {
+    try {
+      // Notify server that user is leaving
+      if (selectedMeeting) {
+        await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/rooms/${selectedMeeting.code}/leave`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Error leaving room:', error);
+    }
+
     signalingService.leaveRoom();
     webRTCService.cleanup();
     setLocalStream(null);
@@ -157,6 +173,9 @@ const Dashboard = () => {
     setSelectedMeeting(null);
     setPermissionsGranted(false);
     setShowLeaveConfirmation(false);
+    
+    // Refresh rooms list
+    fetchRooms();
   };
 
   const handleToggleAudio = () => {
@@ -191,6 +210,32 @@ const Dashboard = () => {
   const handleJoinRoom = (room) => {
     setMeetingToJoin(room);
     setShowJoinConfirmation(true);
+  };
+
+  const handleDeleteRoom = async (roomCode) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/rooms/${roomCode}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Remove room from local state
+        setMeetings(prev => prev.filter(room => room.code !== roomCode));
+        
+        // If this was the selected meeting, leave it
+        if (selectedMeeting && selectedMeeting.code === roomCode) {
+          handleLeaveConfirmed();
+        }
+      } else {
+        alert('Failed to delete room. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error deleting room:', error);
+      alert('Failed to delete room. Please try again.');
+    }
   };
 
   const MacOSButtons = ({ onClose }) => (
@@ -273,7 +318,7 @@ const Dashboard = () => {
         </div>
         </div>
         
-      <div className={`grid grid-cols-3 gap-4 ${isMaximized ? 'scale-100' : 'scale-90'} transition-transform`}>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 ${isMaximized ? 'scale-100' : 'scale-90'} transition-transform`}>
         {/* Local Video */}
         <div className={`aspect-video rounded-lg overflow-hidden relative backdrop-blur-md bg-white/10 border border-white/20 ${
           isFullscreen ? 'hover:ring-2 hover:ring-blue-500 transition-all' : ''
@@ -407,29 +452,31 @@ const Dashboard = () => {
   );
 
   return (
-    <div className="flex-1 bg-gray-900 p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="flex-1 bg-gray-900 p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-white">
+          <h2 className="text-xl sm:text-2xl font-bold text-white">
             {selectedMeeting ? 'Current Session' : 'Focus Rooms'}
           </h2>
         </div>
         
         {!selectedMeeting && (
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <button
               onClick={() => setShowJoinModal(true)}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+              className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
             >
               <FontAwesomeIcon icon={faSignInAlt} />
-              Join Room
+              <span className="hidden sm:inline">Join Room</span>
+              <span className="sm:hidden">Join</span>
             </button>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
             >
               <FontAwesomeIcon icon={faPlus} />
-              Create Room
+              <span className="hidden sm:inline">Create Room</span>
+              <span className="sm:hidden">Create</span>
             </button>
           </div>
         )}
@@ -467,12 +514,14 @@ const Dashboard = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {meetings.map((meeting) => (
                 <MeetingCard 
                   key={meeting._id || meeting.id} 
                   meeting={meeting} 
                   onJoinRequest={handleJoinRequest}
+                  onDeleteRoom={handleDeleteRoom}
+                  isOwner={meeting.owner === currentUser}
                 />
               ))}
             </div>
@@ -510,6 +559,7 @@ const Dashboard = () => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onCreateRoom={handleCreateRoom}
+        currentUser={currentUser}
       />
 
       {/* Join Room Modal */}

@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faPlus, faBullseye, faCalendar, faFileAlt } from '@fortawesome/free-solid-svg-icons';
 
-const CreateRoomModal = ({ isOpen, onClose, onCreateRoom }) => {
+const CreateRoomModal = ({ isOpen, onClose, onCreateRoom, currentUser }) => {
   const [formData, setFormData] = useState({
     name: '',
     focusGoal: '',
     category: '',
     agenda: '',
-    scheduledAt: ''
+    scheduledAt: '',
+    owner: currentUser || 'Anonymous'
   });
 
   const categories = [
@@ -28,9 +29,7 @@ const CreateRoomModal = ({ isOpen, onClose, onCreateRoom }) => {
     e.preventDefault();
     
     try {
-      const url = `${process.env.REACT_APP_API_URL}/api/rooms/create`;
-      console.log("URL: ", url);
-      const response = await fetch(url, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/rooms/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -42,7 +41,7 @@ const CreateRoomModal = ({ isOpen, onClose, onCreateRoom }) => {
         const newRoom = await response.json();
         onCreateRoom(newRoom);
         onClose();
-        setFormData({ name: '', focusGoal: '', category: '', agenda: '', scheduledAt: '' });
+        setFormData({ name: '', focusGoal: '', category: '', agenda: '', scheduledAt: '', owner: currentUser || 'Anonymous' });
       } else {
         const error = await response.json();
         alert(`Failed to create room: ${error.error}`);
@@ -64,13 +63,13 @@ const CreateRoomModal = ({ isOpen, onClose, onCreateRoom }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-800">Create Focus Room</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800">Create Focus Room</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700 p-1"
           >
             <FontAwesomeIcon icon={faTimes} />
           </button>
@@ -170,7 +169,7 @@ const CreateRoomModal = ({ isOpen, onClose, onCreateRoom }) => {
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}

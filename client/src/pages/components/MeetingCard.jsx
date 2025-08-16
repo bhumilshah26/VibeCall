@@ -6,13 +6,21 @@ import {
   faBullseye, 
   faCopy,
   faCalendar,
-  faPlay
+  faPlay,
+  faTrash,
+  faEdit
 } from '@fortawesome/free-solid-svg-icons';
 
-const MeetingCard = ({ meeting, onJoinRequest }) => {
+const MeetingCard = ({ meeting, onJoinRequest, onDeleteRoom, isOwner = false }) => {
   const handleCopyCode = () => {
     navigator.clipboard.writeText(meeting.code);
     // You could add a toast notification here
+  };
+
+  const handleDelete = () => {
+    if (window.confirm(`Are you sure you want to delete "${meeting.name}"? This action cannot be undone.`)) {
+      onDeleteRoom(meeting.code);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -31,6 +39,7 @@ const MeetingCard = ({ meeting, onJoinRequest }) => {
     const colors = {
       'Study': 'bg-blue-100 text-blue-800',
       'Work': 'bg-green-100 text-green-800',
+      'Focus': 'bg-purple-100 text-purple-800',
       'Music': 'bg-purple-100 text-purple-800',
       'Business': 'bg-indigo-100 text-indigo-800',
       'Fitness': 'bg-red-100 text-red-800',
@@ -47,17 +56,28 @@ const MeetingCard = ({ meeting, onJoinRequest }) => {
       {/* Header */}
       <div className="p-4 border-b border-gray-100">
         <div className="flex justify-between items-start mb-2">
-          <h3 className="text-lg font-semibold text-gray-800 line-clamp-2">
+          <h3 className="text-lg font-semibold text-gray-800 line-clamp-2 flex-1 mr-2">
             {meeting.name}
           </h3>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(meeting.category)}`}>
-            {meeting.category}
-          </span>
+          <div className="flex gap-2 flex-shrink-0">
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(meeting.category)}`}>
+              {meeting.category}
+            </span>
+            {isOwner && (
+              <button
+                onClick={handleDelete}
+                className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                title="Delete room"
+              >
+                <FontAwesomeIcon icon={faTrash} className="text-sm" />
+              </button>
+            )}
+          </div>
         </div>
         
         {/* Focus Goal */}
         <div className="flex items-start gap-2 mb-3">
-          <FontAwesomeIcon icon={faBullseye} className="text-blue-500 mt-1 text-sm" />
+          <FontAwesomeIcon icon={faBullseye} className="text-blue-500 mt-1 text-sm flex-shrink-0" />
           <p className="text-sm text-gray-600 line-clamp-2">
             {meeting.focusGoal}
           </p>
@@ -65,15 +85,15 @@ const MeetingCard = ({ meeting, onJoinRequest }) => {
 
         {/* Room Code */}
         <div className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 font-medium">Room Code:</span>
-            <span className="font-mono text-lg font-bold text-gray-800 tracking-wider">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs text-gray-500 font-medium whitespace-nowrap">Room Code:</span>
+            <span className="font-mono text-lg font-bold text-gray-800 tracking-wider truncate">
               {meeting.code}
             </span>
           </div>
           <button
             onClick={handleCopyCode}
-            className="p-1 text-gray-500 hover:text-gray-700 transition-colors"
+            className="p-1 text-gray-500 hover:text-gray-700 transition-colors flex-shrink-0"
             title="Copy room code"
           >
             <FontAwesomeIcon icon={faCopy} className="text-sm" />
@@ -95,15 +115,15 @@ const MeetingCard = ({ meeting, onJoinRequest }) => {
         {/* Scheduled Time */}
         {meeting.scheduledAt && (
           <div className="flex items-center gap-2 mb-3 text-sm text-gray-600">
-            <FontAwesomeIcon icon={faCalendar} />
-            <span>{formatDate(meeting.scheduledAt)}</span>
+            <FontAwesomeIcon icon={faCalendar} className="flex-shrink-0" />
+            <span className="truncate">{formatDate(meeting.scheduledAt)}</span>
           </div>
         )}
 
         {/* Stats */}
         <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
           <div className="flex items-center gap-2">
-            <FontAwesomeIcon icon={faUsers} />
+            <FontAwesomeIcon icon={faUsers} className="flex-shrink-0" />
             <span>{meeting.participantCount || 0} participants</span>
           </div>
           {meeting.isLive && (

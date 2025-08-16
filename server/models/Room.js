@@ -9,6 +9,7 @@ const roomSchema = new mongoose.Schema({
     scheduledAt: Date,
     isActive: { type: Boolean, default: true },
     participantCount: { type: Number, default: 0 },
+    owner: { type: String, default: 'Anonymous' },
     createdAt: {
         type:Date,
         default:Date.now

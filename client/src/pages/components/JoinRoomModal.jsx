@@ -18,7 +18,7 @@ const JoinRoomModal = ({ isOpen, onClose, onJoinRoom }) => {
     setError('');
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms/join/${roomCode.toUpperCase()}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/rooms/join/${roomCode.toUpperCase()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -51,13 +51,13 @@ const JoinRoomModal = ({ isOpen, onClose, onJoinRoom }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md mx-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-800">Join Focus Room</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800">Join Focus Room</h2>
           <button
             onClick={handleClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700 p-1"
           >
             <FontAwesomeIcon icon={faTimes} />
           </button>
@@ -95,7 +95,7 @@ const JoinRoomModal = ({ isOpen, onClose, onJoinRoom }) => {
             </div>
           )}
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <button
               type="button"
               onClick={handleClose}
