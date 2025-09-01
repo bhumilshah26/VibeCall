@@ -9,7 +9,8 @@ const CreateRoomModal = ({ isOpen, onClose, onCreateRoom, currentUser }) => {
     category: '',
     agenda: '',
     scheduledAt: '',
-    owner: currentUser || 'Anonymous'
+    owner: currentUser || 'Anonymous',
+    isLive: true
   });
 
   const categories = [
@@ -29,19 +30,25 @@ const CreateRoomModal = ({ isOpen, onClose, onCreateRoom, currentUser }) => {
     e.preventDefault();
     
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/rooms/create`, {
+      const payload = {
+        ...formData,
+        // If scheduledAt provided and isLive false, keep it; otherwise null
+        scheduledAt: formData.isLive ? null : formData.scheduledAt || null
+      };
+
+      const response = await fetch(`${process.env.REACT_APP_API_URL || `http://192.169.1.14:5000`}/api/rooms/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
         const newRoom = await response.json();
         onCreateRoom(newRoom);
         onClose();
-        setFormData({ name: '', focusGoal: '', category: '', agenda: '', scheduledAt: '', owner: currentUser || 'Anonymous' });
+        setFormData({ name: '', focusGoal: '', category: '', agenda: '', scheduledAt: '', owner: currentUser || 'Anonymous', isLive: true });
       } else {
         const error = await response.json();
         alert(`Failed to create room: ${error.error}`);
@@ -53,7 +60,12 @@ const CreateRoomModal = ({ isOpen, onClose, onCreateRoom, currentUser }) => {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    if (name === 'isLive') {
+      const isLive = value === 'true';
+      setFormData(prev => ({ ...prev, isLive }));
+      return;
+    }
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -76,6 +88,56 @@ const CreateRoomModal = ({ isOpen, onClose, onCreateRoom, currentUser }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Room Type *
+            </label>
+            <div className="flex gap-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="isLive"
+                  value="true"
+                  checked={formData.isLive === true}
+                  onChange={handleChange}
+                />
+                Live now
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="isLive"
+                  value="false"
+                  checked={formData.isLive === false}
+                  onChange={handleChange}
+                />
+                Schedule
+              </label>
+            </div>
+          </div>
+
+          {!formData.isLive && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Scheduled Time *
+              </label>
+              <div className="relative">
+                <FontAwesomeIcon 
+                  icon={faCalendar} 
+                  className="absolute left-3 top-3 text-gray-400" 
+                />
+                <input
+                  type="datetime-local"
+                  name="scheduledAt"
+                  value={formData.scheduledAt}
+                  onChange={handleChange}
+                  required={!formData.isLive}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Room Name *
@@ -146,25 +208,6 @@ const CreateRoomModal = ({ isOpen, onClose, onCreateRoom, currentUser }) => {
                 rows="3"
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Describe the agenda or topics to cover"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Scheduled Time
-            </label>
-            <div className="relative">
-              <FontAwesomeIcon 
-                icon={faCalendar} 
-                className="absolute left-3 top-3 text-gray-400" 
-              />
-              <input
-                type="datetime-local"
-                name="scheduledAt"
-                value={formData.scheduledAt}
-                onChange={handleChange}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>

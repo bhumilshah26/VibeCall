@@ -1,22 +1,44 @@
 const Room = require('../models/Room')
 const {v4:uuidv4 } = require('uuid')
 
+// Global variable to store the io instance
+let ioInstance = null;
+
+// Function to set the io instance
+const setIO = (io) => {
+    ioInstance = io;
+};
+
+// Function to emit room events
+const emitRoomEvent = (event, data) => {
+    if (ioInstance) {
+        ioInstance.emit(event, data);
+    }
+};
+
 const createRoom = async (req, res) => {
-    const  { name, focusGoal, category, agenda, scheduledAt } = req.body;
+    const  { name, focusGoal, category, agenda, scheduledAt, owner, isLive, color } = req.body;
     const code = uuidv4().slice(0, 6).toUpperCase();
 
     try {
+        const isScheduled = !!scheduledAt && !isLive;
         const room = await Room.create({ 
             code, 
             name, 
             focusGoal, 
             category,
             agenda, 
-            scheduledAt, 
+            scheduledAt: isScheduled ? scheduledAt : null,
+            isLive: isLive === true && !isScheduled,
             isActive: true,
             participantCount: 0,
-            owner: req.body.owner || 'Anonymous' // Add owner field
+            owner: owner || 'Anonymous',
+            color: color || '#2563eb'
         });
+        
+        // Emit room created event to all clients
+        emitRoomEvent('room-created', room);
+        
         res.status(200).json(room);
     } catch (e) {
         res.status(500).json({ error: "Failed to create room "} );
@@ -40,10 +62,15 @@ const joinRoom = async (req, res) => {
         if (!room) {
             return res.status(404).json({ error: "Room not found or inactive" });
         }
+        if (!room.isLive) {
+            return res.status(400).json({ error: "Room is scheduled and not live yet" });
+        }
         
-        // Increment participant count
         room.participantCount += 1;
         await room.save();
+        
+        // Emit room updated event to all clients
+        emitRoomEvent('room-updated', room);
         
         res.status(200).json(room);
     } catch (e) {
@@ -66,24 +93,7 @@ const getRoomByCode = async (req, res) => {
     }
 };
 
-const deleteRoom = async (req, res) => {
-    const { code } = req.params;
-    
-    try {
-        const room = await Room.findOne({ code, isActive: true });
-        if (!room) {
-            return res.status(404).json({ error: "Room not found" });
-        }
-        
-        // Soft delete - mark as inactive
-        room.isActive = false;
-        await room.save();
-        
-        res.status(200).json({ message: "Room deleted successfully" });
-    } catch (e) {
-        res.status(500).json({ error: "Failed to delete room" });
-    }
-};
+
 
 const leaveRoom = async (req, res) => {
     const { code } = req.params;
@@ -94,10 +104,12 @@ const leaveRoom = async (req, res) => {
             return res.status(404).json({ error: "Room not found" });
         }
         
-        // Decrement participant count (ensure it doesn't go below 0)
         if (room.participantCount > 0) {
             room.participantCount -= 1;
             await room.save();
+            
+            // Emit room updated event to all clients
+            emitRoomEvent('room-updated', room);
         }
         
         res.status(200).json({ message: "Left room successfully" });
@@ -111,6 +123,6 @@ module.exports = {
     allRooms, 
     joinRoom, 
     getRoomByCode, 
-    deleteRoom, 
-    leaveRoom 
+    leaveRoom,
+    setIO
 };

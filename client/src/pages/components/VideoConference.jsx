@@ -78,10 +78,10 @@ const VideoConference = ({
 
   return (
     <div ref={meetingContainerRef} className={`space-y-6 ${isFullscreen ? 'bg-gray-900 p-6' : ''}`}>
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
           <MacOSButtons onClose={onLeaveRequest} />
-          <h2 className="text-2xl font-bold text-white">{selectedMeeting.name}</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white">{selectedMeeting.name}</h2>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-white">
@@ -101,7 +101,7 @@ const VideoConference = ({
         </div>
       </div>
 
-      <div className={`grid grid-cols-3 gap-4 ${isMaximized ? 'scale-100' : 'scale-90'} transition-transform`}>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 ${isMaximized ? 'scale-100' : 'scale-90'} transition-transform`}>
         {/* Local Video */}
         <div className={`aspect-video rounded-lg overflow-hidden relative backdrop-blur-md bg-white/10 border border-white/20 ${
           isFullscreen ? 'hover:ring-2 hover:ring-blue-500 transition-all' : ''

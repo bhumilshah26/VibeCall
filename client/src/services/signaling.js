@@ -5,9 +5,11 @@ class SignalingService {
   constructor() {
     this.socket = null;
     this.roomCode = null;
+    this.onRoomCreated = null;
+    this.onRoomUpdated = null;
   }
 
-  connect(serverUrl = process.env.REACT_APP_API_URL) {
+  connect(serverUrl = process.env.REACT_APP_SERVER_URL) {
     this.socket = io(serverUrl);
 
     this.socket.on('connect', () => {
@@ -45,13 +47,26 @@ class SignalingService {
       }
     });
 
+    // Handle existing participants when joining
+    this.socket.on('existing-participants', ({ participants }) => {
+      console.log('Existing participants:', participants);
+      // Initiate calls to all existing participants
+      participants.forEach(participantId => {
+        if (participantId !== this.socket.id) {
+          this.initiateCallToUser(participantId);
+        }
+      });
+    });
+
     // Handle user joined
     this.socket.on('user-joined', ({ userId }) => {
+      console.log('User joined:', userId);
       this.initiateCallToUser(userId);
     });
 
     // Handle user left
     this.socket.on('user-left', ({ userId }) => {
+      console.log('User left:', userId);
       webRTCService.handleParticipantDisconnect(userId);
     });
 
@@ -62,19 +77,37 @@ class SignalingService {
         to: participantId,
       });
     };
+
+    // Handle room updates
+    this.socket.on('room-created', (room) => {
+      console.log('Room created:', room);
+      if (this.onRoomCreated) {
+        this.onRoomCreated(room);
+      }
+    });
+
+    this.socket.on('room-updated', (room) => {
+      console.log('Room updated:', room);
+      if (this.onRoomUpdated) {
+        this.onRoomUpdated(room);
+      }
+    });
+
+
   }
 
-  async joinRoom(roomCode) {
+  async joinRoom(roomCode, userName = 'User' + Math.random().toString(36).substr(2, 5)) {
     if (!this.socket) {
       throw new Error('Socket connection not established');
     }
 
     this.roomCode = roomCode;
-    this.socket.emit('join-room', { roomCode, userName: 'User' + Math.random().toString(36).substr(2, 5) });
+    this.socket.emit('join-room', { roomCode, userName });
   }
 
   async initiateCallToUser(userId) {
     try {
+      console.log('Initiating call to user:', userId);
       const offer = await webRTCService.initiateCall(userId);
       this.socket.emit('call-user', {
         offer,

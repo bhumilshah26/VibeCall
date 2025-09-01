@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faUser, 
@@ -10,16 +10,15 @@ import {
   faBriefcase, 
   faGlobe,
   faWindowMinimize,
-  faWindowMaximize
+  faWindowMaximize,
+  faPen,
+  faSignal,
+  faMicrophone,
+  faCamera
 } from '@fortawesome/free-solid-svg-icons';
+// import { faBluetoothB } from '@fortawesome/free-brands-svg-icons';
 
 const Sidebar = () => {
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [roomName, setRoomName] = useState('');
-  const [agenda, setAgenda] = useState('');
-  const [timing, setTiming] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-
   const categories = [
     { id: 'study', name: 'Study', icon: faBook },
     { id: 'music', name: 'Music', icon: faMusic },
@@ -27,12 +26,34 @@ const Sidebar = () => {
     { id: 'general', name: 'General Knowledge', icon: faGlobe },
   ];
 
-  const handleCreateRoom = (e) => {
-    e.preventDefault();
-    // Generate a unique room code for WebRTC connection
-    const roomCode = Math.random().toString(36).substring(7);
-    console.log({ roomName, agenda, timing, selectedCategory, roomCode });
-    setShowCreateModal(false);
+  const [displayName, setDisplayName] = useState('Guest');
+  const [avatarColor, setAvatarColor] = useState('#64748b');
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isProfilePanelOpen, setIsProfilePanelOpen] = useState(false);
+  const [devices, setDevices] = useState({ audioInputs: [], audioOutputs: [], videoInputs: [], bluetooth: [] });
+  const panelRef = useRef(null);
+
+  useEffect(() => {
+    const savedName = localStorage.getItem('vc_displayName');
+    const savedColor = localStorage.getItem('vc_avatarColor');
+    if (savedName) setDisplayName(savedName);
+    if (savedColor) setAvatarColor(savedColor);
+  }, []);
+
+  const saveProfile = async () => {
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL || `http://192.169.1.14:5000`}/api/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayName, avatarColor })
+      });
+      if (!res.ok) throw new Error('Failed to save profile');
+      localStorage.setItem('vc_displayName', displayName);
+      localStorage.setItem('vc_avatarColor', avatarColor);
+      setIsEditingProfile(false);
+    } catch (e) {
+      alert('Could not save profile');
+    }
   };
 
   const MacOSButtons = () => (
@@ -49,8 +70,60 @@ const Sidebar = () => {
     </div>
   );
 
+  const openCreateRoom = () => {
+    window.dispatchEvent(new Event('open-create-room'));
+  };
+
+  const refreshDevices = async (withPermission = false) => {
+    try {
+      let stream;
+      if (withPermission) {
+        // Request permission so device labels are visible
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      }
+      const devs = await navigator.mediaDevices.enumerateDevices();
+      const audioInputs = devs.filter(d => d.kind === 'audioinput');
+      const audioOutputs = devs.filter(d => d.kind === 'audiooutput');
+      const videoInputs = devs.filter(d => d.kind === 'videoinput');
+      const bluetooth = devs.filter(d => (d.label || '').toLowerCase().includes('bluetooth'));
+      setDevices({ audioInputs, audioOutputs, videoInputs, bluetooth });
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+      }
+    } catch (e) {
+      console.error('Device scan failed', e);
+    }
+  };
+
+  useEffect(() => {
+    function onDeviceChange() {
+      if (isProfilePanelOpen) refreshDevices(false);
+    }
+    navigator.mediaDevices?.addEventListener('devicechange', onDeviceChange);
+    return () => navigator.mediaDevices?.removeEventListener('devicechange', onDeviceChange);
+  }, [isProfilePanelOpen]);
+
+  useEffect(() => {
+    function onClickOutside(e) {
+      if (isProfilePanelOpen && panelRef.current && !panelRef.current.contains(e.target)) {
+        setIsProfilePanelOpen(false);
+        setIsEditingProfile(false);
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [isProfilePanelOpen]);
+
+  const toggleProfilePanel = async () => {
+    const next = !isProfilePanelOpen;
+    setIsProfilePanelOpen(next);
+    if (next) {
+      refreshDevices(false);
+    }
+  };
+
   return (
-    <div className="sidebar h-screen bg-gray-900 text-white p-4 flex flex-col">
+    <div className="sidebar h-screen bg-gray-900 text-white p-4 flex flex-col relative">
       <MacOSButtons />
       
       <div className="mb-6">
@@ -74,7 +147,7 @@ const Sidebar = () => {
           </div>
 
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={openCreateRoom}
             className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg flex items-center justify-center gap-2"
           >
             <FontAwesomeIcon icon={faPlus} />
@@ -100,95 +173,106 @@ const Sidebar = () => {
 
       {/* User Profile */}
       <div className="mt-auto pt-4 border-t border-gray-700">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center">
-            <FontAwesomeIcon icon={faUser} />
-          </div>
-          <div>
-            <h3 className="font-medium">User Details</h3>
-            <p className="text-sm text-gray-400">Online</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Create Room Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-          <div className="bg-gray-800 p-6 rounded-lg w-96 relative z-[10000]">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Create Room</h2>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="text-gray-400 hover:text-white"
-              >
-                <FontAwesomeIcon icon={faTimes} />
-              </button>
+        <button onClick={toggleProfilePanel} className="w-full text-left">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: avatarColor }}>
+              <FontAwesomeIcon icon={faUser} />
             </div>
-            <form onSubmit={handleCreateRoom} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Room Name</label>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium truncate" title={displayName}>{displayName}</h3>
+                <span className="text-xs text-gray-400">Profile</span>
+              </div>
+              <p className="text-sm text-gray-400">Online</p>
+            </div>
+          </div>
+        </button>
+
+        {/* Profile Popover */}
+        <div
+          ref={panelRef}
+          className={`absolute left-4 right-4 bottom-20 bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-4 origin-bottom transform transition-all duration-200 ease-out ${isProfilePanelOpen ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-2 scale-95 pointer-events-none'}`}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full" style={{ backgroundColor: avatarColor }} />
+              <span className="font-medium">{displayName}</span>
+            </div>
+            <button className="text-gray-400 hover:text-white" onClick={() => setIsProfilePanelOpen(false)}>
+              <FontAwesomeIcon icon={faTimes} />
+            </button>
+          </div>
+
+          {/* Quick actions */}
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <button onClick={() => setIsEditingProfile(v => !v)} className="bg-gray-700 hover:bg-gray-600 rounded-lg p-3 text-left">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <FontAwesomeIcon icon={faPen} />
+                Edit avatar/name
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Customize how others see you</p>
+            </button>
+            <button onClick={() => refreshDevices(true)} className="bg-gray-700 hover:bg-gray-600 rounded-lg p-3 text-left">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <FontAwesomeIcon icon={faSignal} />
+                Scan devices
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Refresh audio/video list</p>
+            </button>
+          </div>
+
+          {/* Devices */}
+          <div className="space-y-2 mb-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-gray-200">
+              <FontAwesomeIcon icon={faMicrophone} /> Microphones
+            </div>
+            <ul className="text-sm text-gray-300 max-h-20 overflow-auto">
+              {devices.audioInputs.length === 0 && <li className="text-gray-500">No inputs detected</li>}
+              {devices.audioInputs.map(d => <li key={d.deviceId}>{d.label || 'Audio input'}</li>)}
+            </ul>
+            <div className="flex items-center gap-2 text-sm font-semibold text-gray-200 mt-2">
+              <FontAwesomeIcon icon={faCamera} /> Cameras
+            </div>
+            <ul className="text-sm text-gray-300 max-h-20 overflow-auto">
+              {devices.videoInputs.length === 0 && <li className="text-gray-500">No cameras detected</li>}
+              {devices.videoInputs.map(d => <li key={d.deviceId}>{d.label || 'Video input'}</li>)}
+            </ul>
+            <div className="flex items-center gap-2 text-sm font-semibold text-gray-200 mt-2">
+              {/* <FontAwesomeIcon icon={} /> Bluetooth */}
+            </div>
+            <ul className="text-sm text-gray-300 max-h-16 overflow-auto">
+              {devices.bluetooth.length === 0 && <li className="text-gray-500">Not detected</li>}
+              {devices.bluetooth.map(d => <li key={`${d.deviceId}-bt`}>{d.label}</li>)}
+            </ul>
+          </div>
+
+          {/* Inline edit area */}
+          {isEditingProfile && (
+            <div className="border-t border-gray-700 pt-3 mt-2">
+              <div className="flex items-center gap-2 mb-2">
                 <input
                   type="text"
-                  value={roomName}
-                  onChange={(e) => setRoomName(e.target.value)}
-                  className="w-full bg-gray-700 rounded-lg px-3 py-2 text-white"
-                  required
+                  className="flex-1 bg-gray-900 rounded px-3 py-2 text-white"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Display name"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Agenda/Purpose</label>
-                <textarea
-                  value={agenda}
-                  onChange={(e) => setAgenda(e.target.value)}
-                  className="w-full bg-gray-700 rounded-lg px-3 py-2 text-white"
-                  rows="3"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Timing</label>
                 <input
-                  type="datetime-local"
-                  value={timing}
-                  onChange={(e) => setTiming(e.target.value)}
-                  className="w-full bg-gray-700 rounded-lg px-3 py-2 text-white"
+                  type="color"
+                  value={avatarColor}
+                  onChange={(e) => setAvatarColor(e.target.value)}
+                  className="w-10 h-10 p-0 border border-gray-700 rounded"
+                  title="Avatar color"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Category</label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full bg-gray-700 rounded-lg px-3 py-2 text-white"
-                  required
-                >
-                  <option value="">Select a category</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+              <div className="flex gap-2">
+                <button onClick={saveProfile} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg">Save</button>
+                <button onClick={() => setIsEditingProfile(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-2 rounded-lg">Cancel</button>
               </div>
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
-                >
-                  Create
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

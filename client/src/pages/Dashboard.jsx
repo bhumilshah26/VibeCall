@@ -16,8 +16,7 @@ import {
   faExpand,
   faCompress,
   faPlus,
-  faSignInAlt,
-  faTrash
+  faSignInAlt
 } from '@fortawesome/free-solid-svg-icons';
 import webRTCService from '../services/webRTC';
 import signalingService from '../services/signaling';
@@ -53,7 +52,7 @@ const Dashboard = () => {
   // Fetch rooms from API
   const fetchRooms = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/rooms`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms`);
       if (response.ok) {
         const rooms = await response.json();
         setMeetings(rooms);
@@ -75,6 +74,17 @@ const Dashboard = () => {
     // Connect to signaling server
     signalingService.connect();
 
+    // Set up real-time room update handlers
+    signalingService.onRoomCreated = (newRoom) => {
+      setMeetings(prev => [newRoom, ...prev]);
+    };
+
+    signalingService.onRoomUpdated = (updatedRoom) => {
+      setMeetings(prev => prev.map(room => 
+        room.code === updatedRoom.code ? updatedRoom : room
+      ));
+    };
+
     // Cleanup function
     return () => {
       if (localStream) {
@@ -85,6 +95,7 @@ const Dashboard = () => {
   }, [localStream]);
 
   const handleStreamReceived = (participantId, stream) => {
+    console.log('Received stream from participant:', participantId);
     setRemoteStreams(prev => new Map(prev).set(participantId, stream));
   };
 
@@ -135,14 +146,19 @@ const Dashboard = () => {
       if (!permissionsGranted) {
         await initializeMedia();
       }
+      const savedName = localStorage.getItem('vc_displayName');
+      const joinName = savedName || currentUser;
       
-      await signalingService.joinRoom(meetingToJoin.code);
+      console.log('Joining room:', meetingToJoin.code, 'as:', joinName);
+      
+      await signalingService.joinRoom(meetingToJoin.code, joinName);
       setSelectedMeeting(meetingToJoin);
       setShowJoinConfirmation(false);
       setMeetingToJoin(null);
+      
+      console.log('Successfully joined room:', meetingToJoin.code);
     } catch (error) {
       console.error('Error joining meeting:', error);
-      // Show error message
       alert('Failed to join meeting. Please try again.');
     }
   };
@@ -155,7 +171,7 @@ const Dashboard = () => {
     try {
       // Notify server that user is leaving
       if (selectedMeeting) {
-        await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/rooms/${selectedMeeting.code}/leave`, {
+        await fetch(`${process.env.REACT_APP_API_URL || `http://192.169.1.14:5000`}/api/rooms/${selectedMeeting.code}/leave`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -165,7 +181,6 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Error leaving room:', error);
     }
-
     signalingService.leaveRoom();
     webRTCService.cleanup();
     setLocalStream(null);
@@ -204,7 +219,8 @@ const Dashboard = () => {
   }, [isVideoOff]);
 
   const handleCreateRoom = (newRoom) => {
-    setMeetings(prev => [newRoom, ...prev]);
+    // Room will be added via real-time update from socket
+    console.log('Room created:', newRoom);
   };
 
   const handleJoinRoom = (room) => {
@@ -212,31 +228,7 @@ const Dashboard = () => {
     setShowJoinConfirmation(true);
   };
 
-  const handleDeleteRoom = async (roomCode) => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/rooms/${roomCode}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
 
-      if (response.ok) {
-        // Remove room from local state
-        setMeetings(prev => prev.filter(room => room.code !== roomCode));
-        
-        // If this was the selected meeting, leave it
-        if (selectedMeeting && selectedMeeting.code === roomCode) {
-          handleLeaveConfirmed();
-        }
-      } else {
-        alert('Failed to delete room. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error deleting room:', error);
-      alert('Failed to delete room. Please try again.');
-    }
-  };
 
   const MacOSButtons = ({ onClose }) => (
     <div className="flex gap-2">
@@ -291,6 +283,12 @@ const Dashboard = () => {
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  useEffect(() => {
+    const openCreate = () => setShowCreateModal(true);
+    window.addEventListener('open-create-room', openCreate);
+    return () => window.removeEventListener('open-create-room', openCreate);
   }, []);
 
   const VideoGrid = () => (
@@ -520,8 +518,6 @@ const Dashboard = () => {
                   key={meeting._id || meeting.id} 
                   meeting={meeting} 
                   onJoinRequest={handleJoinRequest}
-                  onDeleteRoom={handleDeleteRoom}
-                  isOwner={meeting.owner === currentUser}
                 />
               ))}
             </div>

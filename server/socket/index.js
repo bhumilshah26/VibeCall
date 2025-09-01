@@ -3,6 +3,10 @@ module.exports = function (io) {
     const userRooms = new Map(); // Store which room each user is in
     const userNames = new Map(); // Store user names
 
+    const emitRoomUpdate = (event, data) => {
+        io.emit(event, data);
+    };
+
     io.on('connection', socket => {
         console.log(`User connected: ${socket.id}`);
 

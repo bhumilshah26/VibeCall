@@ -8,20 +8,39 @@ class WebRTCService {
     this.videoTrack = null;
     this.audioTrack = null;
 
-    // STUN servers for NAT traversal
+    // STUN/TURN servers for NAT traversal (TURN optional via env)
+    const turnUrl = process.env.REACT_APP_TURN_URL;
+    const turnUser = process.env.REACT_APP_TURN_USERNAME;
+    const turnPass = process.env.REACT_APP_TURN_CREDENTIAL;
+
     this.configuration = {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
+        ...(turnUrl && turnUser && turnPass
+          ? [{ urls: turnUrl, username: turnUser, credential: turnPass }]
+          : [])
       ],
+      iceCandidatePoolSize: 10,
     };
   }
 
   async requestMediaPermissions() {
     try {
       this.localStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
+        video: {
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 },
+          frameRate: { ideal: 30, max: 60 }
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        },
       });
 
       // Store individual tracks
@@ -42,18 +61,21 @@ class WebRTCService {
 
   async createPeerConnection(participantId) {
     try {
+      console.log('Creating peer connection for:', participantId);
       const peerConnection = new RTCPeerConnection(this.configuration);
 
       // Add local tracks to the peer connection
       if (this.localStream) {
         this.localStream.getTracks().forEach(track => {
           peerConnection.addTrack(track, this.localStream);
+          console.log('Added track to peer connection:', track.kind);
         });
       }
 
       // Handle ICE candidates
       peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
+          console.log('ICE candidate generated for:', participantId);
           // Send the ICE candidate to the other peer through your signaling server
           this.onIceCandidate?.(participantId, event.candidate);
         }
@@ -61,6 +83,7 @@ class WebRTCService {
 
       // Handle incoming tracks
       peerConnection.ontrack = (event) => {
+        console.log('Received track from:', participantId, event.streams[0]);
         if (this.onStreamReceived) {
           this.onStreamReceived(participantId, event.streams[0]);
         }
@@ -68,9 +91,15 @@ class WebRTCService {
 
       // Handle connection state changes
       peerConnection.onconnectionstatechange = () => {
+        console.log('Connection state changed for', participantId, ':', peerConnection.connectionState);
         if (peerConnection.connectionState === 'disconnected') {
           this.handleParticipantDisconnect(participantId);
         }
+      };
+
+      // Handle ICE connection state
+      peerConnection.oniceconnectionstatechange = () => {
+        console.log('ICE connection state for', participantId, ':', peerConnection.iceConnectionState);
       };
 
       this.peerConnections.set(participantId, peerConnection);
@@ -83,12 +112,14 @@ class WebRTCService {
 
   async handleIncomingCall(participantId, offer) {
     try {
+      console.log('Handling incoming call from:', participantId);
       const peerConnection = await this.createPeerConnection(participantId);
       await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
       
       const answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
       
+      console.log('Created answer for:', participantId);
       return answer;
     } catch (error) {
       console.error('Error handling incoming call:', error);
@@ -98,10 +129,12 @@ class WebRTCService {
 
   async initiateCall(participantId) {
     try {
+      console.log('Initiating call to:', participantId);
       const peerConnection = await this.createPeerConnection(participantId);
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
       
+      console.log('Created offer for:', participantId);
       return offer;
     } catch (error) {
       console.error('Error initiating call:', error);
@@ -111,29 +144,32 @@ class WebRTCService {
 
   async handleAnswer(participantId, answer) {
     try {
+      console.log('Handling answer from:', participantId);
       const peerConnection = this.peerConnections.get(participantId);
       if (peerConnection) {
         await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        console.log('Set remote description for:', participantId);
       }
     } catch (error) {
       console.error('Error handling answer:', error);
-      throw error;
     }
   }
 
   async addIceCandidate(participantId, candidate) {
     try {
+      console.log('Adding ICE candidate for:', participantId);
       const peerConnection = this.peerConnections.get(participantId);
       if (peerConnection) {
         await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        console.log('ICE candidate added for:', participantId);
       }
     } catch (error) {
       console.error('Error adding ICE candidate:', error);
-      throw error;
     }
   }
 
   handleParticipantDisconnect(participantId) {
+    console.log('Participant disconnected:', participantId);
     const peerConnection = this.peerConnections.get(participantId);
     if (peerConnection) {
       peerConnection.close();

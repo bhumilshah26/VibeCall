@@ -6,21 +6,12 @@ import {
   faBullseye, 
   faCopy,
   faCalendar,
-  faPlay,
-  faTrash,
-  faEdit
+  faPlay
 } from '@fortawesome/free-solid-svg-icons';
 
-const MeetingCard = ({ meeting, onJoinRequest, onDeleteRoom, isOwner = false }) => {
+const MeetingCard = ({ meeting, onJoinRequest }) => {
   const handleCopyCode = () => {
     navigator.clipboard.writeText(meeting.code);
-    // You could add a toast notification here
-  };
-
-  const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to delete "${meeting.name}"? This action cannot be undone.`)) {
-      onDeleteRoom(meeting.code);
-    }
   };
 
   const formatDate = (dateString) => {
@@ -51,27 +42,27 @@ const MeetingCard = ({ meeting, onJoinRequest, onDeleteRoom, isOwner = false }) 
     return colors[category] || colors['Other'];
   };
 
+  const canJoin = meeting.isLive === true;
+  const accentColor = meeting.color || '#2563eb';
+
   return (
-    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden h-80 flex flex-col">
+      {/* Accent Bar */}
+      <div style={{ backgroundColor: accentColor }} className="h-1 w-full" />
+
       {/* Header */}
-      <div className="p-4 border-b border-gray-100">
+      <div className="p-4 border-b border-gray-100 flex-shrink-0">
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-lg font-semibold text-gray-800 line-clamp-2 flex-1 mr-2">
             {meeting.name}
           </h3>
-          <div className="flex gap-2 flex-shrink-0">
+          <div className="flex gap-2 flex-shrink-0 items-center">
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(meeting.category)}`}>
               {meeting.category}
             </span>
-            {isOwner && (
-              <button
-                onClick={handleDelete}
-                className="p-1 text-red-500 hover:text-red-700 transition-colors"
-                title="Delete room"
-              >
-                <FontAwesomeIcon icon={faTrash} className="text-sm" />
-              </button>
-            )}
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${canJoin ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+              {canJoin ? 'Live' : 'Scheduled'}
+            </span>
           </div>
         </div>
         
@@ -101,8 +92,8 @@ const MeetingCard = ({ meeting, onJoinRequest, onDeleteRoom, isOwner = false }) 
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-4">
+      {/* Content - Scrollable area */}
+      <div className="p-4 flex-1 overflow-y-auto">
         {/* Agenda */}
         {meeting.agenda && (
           <div className="mb-3">
@@ -113,7 +104,7 @@ const MeetingCard = ({ meeting, onJoinRequest, onDeleteRoom, isOwner = false }) 
         )}
 
         {/* Scheduled Time */}
-        {meeting.scheduledAt && (
+        {!canJoin && meeting.scheduledAt && (
           <div className="flex items-center gap-2 mb-3 text-sm text-gray-600">
             <FontAwesomeIcon icon={faCalendar} className="flex-shrink-0" />
             <span className="truncate">{formatDate(meeting.scheduledAt)}</span>
@@ -121,26 +112,24 @@ const MeetingCard = ({ meeting, onJoinRequest, onDeleteRoom, isOwner = false }) 
         )}
 
         {/* Stats */}
-        <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+        <div className="flex items-center justify-between text-sm text-gray-600">
           <div className="flex items-center gap-2">
             <FontAwesomeIcon icon={faUsers} className="flex-shrink-0" />
             <span>{meeting.participantCount || 0} participants</span>
           </div>
-          {meeting.isLive && (
-            <div className="flex items-center gap-1 text-green-600">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="font-medium">Live</span>
-            </div>
-          )}
         </div>
+      </div>
 
-        {/* Join Button */}
+      {/* Join Button - Fixed at bottom */}
+      <div className="p-4 flex-shrink-0">
         <button
           onClick={() => onJoinRequest(meeting)}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+          disabled={!canJoin}
+          style={canJoin ? { backgroundColor: accentColor } : {}}
+          className={`w-full text-white py-2 px-4 rounded-md transition-colors flex items-center justify-center gap-2 ${canJoin ? 'hover:opacity-95' : 'bg-gray-400 cursor-not-allowed'}`}
         >
           <FontAwesomeIcon icon={faPlay} />
-          {meeting.isLive ? 'Join Session' : 'Join Room'}
+          {canJoin ? 'Join Room' : 'Not Live'}
         </button>
       </div>
     </div>
