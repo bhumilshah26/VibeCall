@@ -39,6 +39,7 @@ const Dashboard = () => {
   const [permissionsGranted, setPermissionsGranted] = useState(false);
   const localVideoRef = useRef(null);
   const streamRef = useRef(null);
+  const localStreamRef = useRef(null);
   const [showJoinConfirmation, setShowJoinConfirmation] = useState(false);
   const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
   const [meetingToJoin, setMeetingToJoin] = useState(null);
@@ -70,6 +71,12 @@ const Dashboard = () => {
     fetchRooms();
   }, []);
 
+  // Keep ref in sync with latest localStream
+  useEffect(() => {
+    localStreamRef.current = localStream;
+  }, [localStream]);
+
+  // Connect signaling once on mount; cleanup on unmount only
   useEffect(() => {
     // Connect to signaling server
     signalingService.connect();
@@ -85,14 +92,14 @@ const Dashboard = () => {
       ));
     };
 
-    // Cleanup function
+    // Cleanup only on unmount
     return () => {
-      if (localStream) {
+      if (localStreamRef.current) {
         webRTCService.cleanup();
       }
       signalingService.disconnect();
     };
-  }, [localStream]);
+  }, []);
 
   const handleStreamReceived = (participantId, stream) => {
     console.log('Received stream from participant:', participantId);
@@ -171,7 +178,7 @@ const Dashboard = () => {
     try {
       // Notify server that user is leaving
       if (selectedMeeting) {
-        await fetch(`${process.env.REACT_APP_API_URL || `http://192.169.1.14:5000`}/api/rooms/${selectedMeeting.code}/leave`, {
+        await fetch(`${process.env.REACT_APP_API_URL}/api/rooms/${selectedMeeting.code}/leave`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

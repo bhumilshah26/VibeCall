@@ -9,7 +9,7 @@ class SignalingService {
     this.onRoomUpdated = null;
   }
 
-  connect(serverUrl = process.env.REACT_APP_SERVER_URL) {
+  connect(serverUrl = process.env.REACT_APP_API_URL) {
     this.socket = io(serverUrl);
 
     this.socket.on('connect', () => {

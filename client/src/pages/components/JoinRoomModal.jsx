@@ -18,7 +18,7 @@ const JoinRoomModal = ({ isOpen, onClose, onJoinRoom }) => {
     setError('');
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || `http://192.169.1.14:5000` || 'http://localhost:5000'}/api/rooms/join/${roomCode.toUpperCase()}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/rooms/join/${roomCode.toUpperCase()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

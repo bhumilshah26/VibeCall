@@ -36,7 +36,7 @@ const CreateRoomModal = ({ isOpen, onClose, onCreateRoom, currentUser }) => {
         scheduledAt: formData.isLive ? null : formData.scheduledAt || null
       };
 
-      const response = await fetch(`${process.env.REACT_APP_API_URL || `http://192.169.1.14:5000`}/api/rooms/create`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

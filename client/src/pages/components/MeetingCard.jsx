@@ -2,7 +2,6 @@ import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faUsers, 
-  faClock, 
   faBullseye, 
   faCopy,
   faCalendar,

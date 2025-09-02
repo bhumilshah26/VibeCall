@@ -67,16 +67,16 @@ module.exports = function (io) {
             });
         });
 
-        // Handle room leaving
         socket.on('leave-room', ({ roomCode }) => {
+            console.log(1);
             handleUserLeaving(socket, roomCode);
         });
 
-        // Handle disconnection
         socket.on('disconnecting', () => {
-            // Find and leave the room the user was in
+            console.log(2);
             const roomCode = userRooms.get(socket.id);
             if (roomCode) {
+                console.log(3, roomCode);
                 handleUserLeaving(socket, roomCode);
             }
             console.log(`User disconnected: ${socket.id}`);
