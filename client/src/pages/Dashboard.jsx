@@ -201,7 +201,7 @@ const Dashboard = () => {
   const handleToggleAudio = () => {
     const newMuted = !isMuted;
     setIsMuted(newMuted);
-    webRTCService.toggleAudio(newMuted);
+    webRTCService.toggleAudio(!newMuted);
   };
 
   const handleToggleVideo = useCallback(async () => {
