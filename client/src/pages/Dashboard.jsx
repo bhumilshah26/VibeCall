@@ -9,8 +9,6 @@ import {
   faTimes,
   faWindowMinimize,
   faWindowMaximize,
-  faClock,
-  faFileAlt,
   faMicrophoneSlash,
   faVideoSlash,
   faExpand,
@@ -201,8 +199,9 @@ const Dashboard = () => {
   };
 
   const handleToggleAudio = () => {
-    setIsMuted(!isMuted);
-    webRTCService.toggleAudio(!isMuted);
+    const newMuted = !isMuted;
+    setIsMuted(newMuted);
+    webRTCService.toggleAudio(!newMuted);
   };
 
   const handleToggleVideo = useCallback(async () => {

@@ -1,4 +1,4 @@
-const User = require('../models/User')
+const User = require('../models/User');
 
 const upsertUser = async (req, res) => {
 	try {

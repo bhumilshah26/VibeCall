@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 
 const roomSchema = new mongoose.Schema({
     code: { type: String, required: true, unique: true },
@@ -14,8 +14,8 @@ const roomSchema = new mongoose.Schema({
     color: { type: String, default: '#2563eb' },
     createdAt: {
         type:Date,
-        default:Date.now
-    }
+        default:Date.now,
+    },
 });
 
 module.exports = mongoose.model('Room', roomSchema);

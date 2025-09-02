@@ -1,5 +1,5 @@
-const Room = require('../models/Room')
-const {v4:uuidv4 } = require('uuid')
+const Room = require('../models/Room');
+const {v4:uuidv4 } = require('uuid');
 
 let ioInstance = null;
 
@@ -47,7 +47,7 @@ const allRooms = async (_req, res) => {
         const rooms = await Room.find({ isActive: true }).sort({ createdAt: -1} );
         res.status(200).json(rooms);
     } catch (e) {
-        res.status(500).json({ error: "Cannot Fetch All Rooms "} );
+        res.status(500).json({ error: `Cannot fetch all rooms ${e.message}`} );
     }
 };
 
@@ -60,7 +60,7 @@ const joinRoom = async (req, res) => {
             return res.status(404).json({ error: "Room not found or inactive" });
         }
         if (!room.isLive) {
-            return res.status(400).json({ error: "Room is scheduled and not live yet" });
+            return res.status(400).json({ error: `Room is scheduled and not live yet` });
         }
         
         room.participantCount += 1;
@@ -71,7 +71,7 @@ const joinRoom = async (req, res) => {
         
         res.status(200).json(room);
     } catch (e) {
-        res.status(500).json({ error: "Failed to join room" });
+        res.status(500).json({ error: "Failed to join room" + e.message });
     }
 };
 
@@ -86,7 +86,7 @@ const getRoomByCode = async (req, res) => {
         
         res.status(200).json(room);
     } catch (e) {
-        res.status(500).json({ error: "Failed to get room" });
+        res.status(500).json({ error: "Failed to get room" + e.message });
     }
 };
 
@@ -119,5 +119,5 @@ module.exports = {
     joinRoom, 
     getRoomByCode, 
     leaveRoom,
-    setIO
+    setIO,
 };
