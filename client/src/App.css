@@ -36,15 +36,3 @@
     transform: rotate(360deg);
   }
 }
-
-.sidebar {
-  transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
-  width: 280px;
-  min-width: 280px;
-}
-
-.sidebar-hidden {
-  transform: translateX(-100%);
-  width: 0;
-  min-width: 0;
-}

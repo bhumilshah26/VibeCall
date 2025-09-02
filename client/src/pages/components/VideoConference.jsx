@@ -4,7 +4,6 @@ import {
   faUsers, 
   faMicrophone, 
   faVideo, 
-  faClosedCaptioning,
   faLanguage,
   faTimes,
   faWindowMinimize,
@@ -14,7 +13,6 @@ import {
   faExpand,
   faCompress
 } from '@fortawesome/free-solid-svg-icons';
-import webRTCService from '../../services/webRTC';
 
 const MacOSButtons = ({ onClose }) => (
   <div className="flex gap-2">
@@ -49,7 +47,6 @@ const VideoConference = ({
   isMaximized
 }) => {
   const [showControls, setShowControls] = useState(true);
-  const [showCaptions, setShowCaptions] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const meetingContainerRef = useRef(null);
 
@@ -86,7 +83,8 @@ const VideoConference = ({
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-white">
             <FontAwesomeIcon icon={faUsers} />
-            <span>{remoteStreams.size + 1} participants</span>
+            <span>{remoteStreams.size + 1}</span>
+            <span>{remoteStreams.size + 1} participant/s</span>
           </div>
           <button
             onClick={toggleFullscreen}
@@ -153,6 +151,16 @@ const VideoConference = ({
                 }
               }}
             />
+            {/* Ensure remote audio is played */}
+            <audio
+              autoPlay
+              ref={el => {
+                if (el && el.srcObject !== stream) {
+                  el.srcObject = stream;
+                  el.play().catch(e => console.error('Error playing remote audio:', e));
+                }
+              }}
+            />
             <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
               LIVE
             </div>
@@ -191,17 +199,6 @@ const VideoConference = ({
 
             <div className="flex gap-4">
               <button
-                onClick={() => setShowCaptions(!showCaptions)}
-                className={`p-3 rounded-full ${
-                  showCaptions ? 'bg-blue-500' : 'bg-white/20'
-                } hover:bg-opacity-80 transition-colors`}
-              >
-                <FontAwesomeIcon icon={faClosedCaptioning} className="text-white" />
-              </button>
-              <button className="p-3 rounded-full bg-white/20 hover:bg-opacity-80 transition-colors">
-                <FontAwesomeIcon icon={faLanguage} className="text-white" />
-              </button>
-              <button
                 onClick={onLeaveRequest}
                 className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
               >
@@ -209,13 +206,6 @@ const VideoConference = ({
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Smart Language Transcription */}
-      {showCaptions && (
-        <div className={`fixed ${isFullscreen ? 'bottom-32 left-6 right-6' : 'bottom-24 left-0 right-0'} backdrop-blur-md bg-black/30 text-white p-4 text-center rounded-lg`}>
-          <p>Live captions will appear here...</p>
         </div>
       )}
     </div>
