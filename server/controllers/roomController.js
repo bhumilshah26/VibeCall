@@ -1,15 +1,12 @@
 const Room = require('../models/Room')
 const {v4:uuidv4 } = require('uuid')
 
-// Global variable to store the io instance
 let ioInstance = null;
 
-// Function to set the io instance
 const setIO = (io) => {
     ioInstance = io;
 };
 
-// Function to emit room events
 const emitRoomEvent = (event, data) => {
     if (ioInstance) {
         ioInstance.emit(event, data);
@@ -45,7 +42,7 @@ const createRoom = async (req, res) => {
     }
 };
 
-const allRooms = async (req, res) => {
+const allRooms = async (_req, res) => {
     try {
         const rooms = await Room.find({ isActive: true }).sort({ createdAt: -1} );
         res.status(200).json(rooms);
@@ -92,8 +89,6 @@ const getRoomByCode = async (req, res) => {
         res.status(500).json({ error: "Failed to get room" });
     }
 };
-
-
 
 const leaveRoom = async (req, res) => {
     const { code } = req.params;

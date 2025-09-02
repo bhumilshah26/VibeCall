@@ -375,6 +375,16 @@ const Dashboard = () => {
                 }
               }}
             />
+            {/* Ensure remote audio is played */}
+            <audio
+              autoPlay
+              ref={el => {
+                if (el && el.srcObject !== stream) {
+                  el.srcObject = stream;
+                  el.play().catch(e => console.error('Error playing remote audio:', e));
+                }
+              }}
+            />
             <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
               LIVE
               </div>

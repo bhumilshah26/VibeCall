@@ -58,10 +58,10 @@ class SignalingService {
       });
     });
 
-    // Handle user joined
+    // Handle user joined (avoid glare: existing participants do NOT initiate calls)
     this.socket.on('user-joined', ({ userId }) => {
       console.log('User joined:', userId);
-      this.initiateCallToUser(userId);
+      // The joining user will initiate calls to existing participants.
     });
 
     // Handle user left
