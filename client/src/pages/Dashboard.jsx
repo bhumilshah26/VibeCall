@@ -17,7 +17,7 @@ import JoinRoomModal from './components/JoinRoomModal';
 const Dashboard = () => {
   const [selectedMeeting, setSelectedMeeting] = useState(null);
   const [meetings, setMeetings] = useState([]);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [localStream, setLocalStream] = useState(null);
@@ -34,6 +34,10 @@ const Dashboard = () => {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const currentUser = 'User' + Math.random().toString(36).substr(2, 5);
+  const [showSettings, setShowSettings] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const categories = ['All','Study','Work','Focus','Music','Business','Fitness','Creative','Technology','Language','Other'];
 
   // Fetch rooms from API
   const fetchRooms = async () => {
@@ -55,6 +59,16 @@ const Dashboard = () => {
   useEffect(() => {
     fetchRooms();
   }, []);
+
+  // Apply dark mode class on root
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDarkMode) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [isDarkMode]);
 
   // Keep ref in sync with latest localStream
   useEffect(() => {
@@ -240,12 +254,12 @@ const Dashboard = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="flex items-center gap-4">
           <h2 className="text-xl sm:text-2xl font-bold text-white">
-            {selectedMeeting ? 'Current Session' : 'Focus Rooms'}
+            {selectedMeeting ? selectedMeeting.name : 'Focus Rooms'}  
           </h2>
         </div>
         
         {!selectedMeeting && (
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-center">
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-center relative">
             <button
               onClick={() => setShowJoinModal(true)}
               className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
@@ -263,6 +277,7 @@ const Dashboard = () => {
               <span className="sm:hidden">Create</span>
             </button>
             <button
+              onClick={() => setShowSettings(prev => !prev)}
               className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
               title="Settings"
             >
@@ -274,6 +289,34 @@ const Dashboard = () => {
             >
               <FontAwesomeIcon icon={faUser} className="text-white" />
             </button>
+
+            {showSettings && (
+              <div className="absolute right-0 top-12 w-64 bg-white/95 backdrop-blur-md rounded-lg shadow-lg p-3 z-10">
+                <div className="text-sm font-semibold text-gray-800 mb-2">Settings</div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-gray-700">Dark mode</span>
+                  <button
+                    onClick={() => setIsDarkMode(v => !v)}
+                    className={`w-11 h-6 rounded-full transition-colors ${isDarkMode ? 'bg-blue-600' : 'bg-gray-300'}`}
+                    title="Toggle dark mode"
+                  >
+                    <span className={`block w-5 h-5 bg-white rounded-full transform transition-transform ${isDarkMode ? 'translate-x-5' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+                <div className="py-2">
+                  <div className="text-sm text-gray-700 mb-1">Filter by category</div>
+                  <select
+                    value={selectedCategory}
+                    onChange={e => setSelectedCategory(e.target.value)}
+                    className="w-full text-sm border border-gray-300 rounded-md p-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -311,7 +354,7 @@ const Dashboard = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {meetings.map((meeting) => (
+              {(selectedCategory === 'All' ? meetings : meetings.filter(m => m.category === selectedCategory)).map((meeting) => (
                 <MeetingCard 
                   key={meeting._id || meeting.id} 
                   meeting={meeting} 
@@ -332,7 +375,7 @@ const Dashboard = () => {
         }}
         onConfirm={handleJoinConfirmed}
         title="Join Focus Room"
-        message={`Are you sure you want to join "${meetingToJoin?.name}"? This will activate your camera and microphone.`}
+        message={`Are you sure you want to join ${meetingToJoin?.name}? This will activate your camera and microphone.`}
         confirmText="Join"
         cancelText="Cancel"
       />

@@ -14,26 +14,6 @@ import {
   faCompress
 } from '@fortawesome/free-solid-svg-icons';
 
-const MacOSButtons = ({ onClose }) => (
-  <div className="flex gap-2">
-    <button 
-      onClick={onClose}
-      className="w-3 h-3 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center group"
-    >
-      <FontAwesomeIcon 
-        icon={faTimes} 
-        className="text-[8px] text-transparent group-hover:text-red-800" 
-      />
-    </button>
-    <button className="w-3 h-3 rounded-full bg-yellow-500 hover:bg-yellow-600">
-      <FontAwesomeIcon icon={faWindowMinimize} className="hidden" />
-    </button>
-    <button className="w-3 h-3 rounded-full bg-green-500 hover:bg-green-600">
-      <FontAwesomeIcon icon={faWindowMaximize} className="hidden" />
-    </button>
-  </div>
-);
-
 const VideoConference = ({ 
   selectedMeeting,
   onLeaveRequest,
@@ -77,13 +57,10 @@ const VideoConference = ({
     <div ref={meetingContainerRef} className={`space-y-6 ${isFullscreen ? 'bg-gray-900 p-6' : ''}`}>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
-          <MacOSButtons onClose={onLeaveRequest} />
-          <h2 className="text-xl sm:text-2xl font-bold text-white">{selectedMeeting.name}</h2>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-white">
             <FontAwesomeIcon icon={faUsers} />
-            <span>{remoteStreams.size + 1}</span>
             <span>{remoteStreams.size + 1} participant/s</span>
           </div>
           <button
