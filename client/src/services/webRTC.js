@@ -15,16 +15,30 @@ class WebRTCService {
 
     this.configuration = {
       iceServers: [
+        // Google STUN servers
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
         { urls: 'stun:stun2.l.google.com:19302' },
         { urls: 'stun:stun3.l.google.com:19302' },
         { urls: 'stun:stun4.l.google.com:19302' },
+        
+        // Additional STUN servers for better connectivity
+        { urls: 'stun:stun.services.mozilla.com' },
+        { urls: 'stun:stunserver.org' },
+        
+        // Add TURN server if configured
         ...(turnUrl && turnUser && turnPass
-          ? [{ urls: turnUrl, username: turnUser, credential: turnPass }]
+          ? [{
+              urls: turnUrl,
+              username: turnUser,
+              credential: turnPass
+            }]
           : [])
       ],
       iceCandidatePoolSize: 10,
+      iceTransportPolicy: 'all',
+      bundlePolicy: 'max-bundle',
+      rtcpMuxPolicy: 'require',
     };
   }
 
