@@ -4,14 +4,11 @@ import {
   faUsers, 
   faMicrophone, 
   faVideo, 
-  faLanguage,
-  faTimes,
-  faWindowMinimize,
-  faWindowMaximize,
   faMicrophoneSlash,
   faVideoSlash,
   faExpand,
-  faCompress
+  faCompress,
+  faPhoneSlash
 } from '@fortawesome/free-solid-svg-icons';
 
 const VideoConference = ({ 
@@ -29,7 +26,6 @@ const VideoConference = ({
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const meetingContainerRef = useRef(null);
-
   const toggleFullscreen = async () => {
     try {
       if (!document.fullscreenElement) {
@@ -54,32 +50,27 @@ const VideoConference = ({
   }, []);
 
   return (
-    <div ref={meetingContainerRef} className={`space-y-6 ${isFullscreen ? 'bg-gray-900 p-6' : ''}`}>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
+    <div ref={meetingContainerRef}>
+      {/* Top-Right overlay: participant count + fullscreen */}
+      <div className="fixed top-5 right-3 z-20 flex items-center gap-3">
+        <div className="flex items-center gap-2 text-white/90 text-sm px-3 py-1.5 rounded-full border border-white/20 bg-white/10">
+          <FontAwesomeIcon icon={faUsers} />
+          <span>{remoteStreams.size + 1} participant/s</span>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-white">
-            <FontAwesomeIcon icon={faUsers} />
-            <span>{remoteStreams.size + 1} participant/s</span>
-          </div>
-          <button
-            onClick={toggleFullscreen}
-            className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-          >
-            <FontAwesomeIcon 
-              icon={isFullscreen ? faCompress : faExpand}
-              className="text-white text-lg" 
-            />
-          </button>
-        </div>
+        <button
+          onClick={toggleFullscreen}
+          className="p-3 rounded-full bg-white/15 hover:bg-white/25 border border-white/30 transition-colors"
+          title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+        >
+          <FontAwesomeIcon icon={isFullscreen ? faCompress : faExpand} className="text-white" />
+        </button>
       </div>
 
-      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 ${isMaximized ? 'scale-100' : 'scale-90'} transition-transform`}>
+      {/* Video Grid */}
+      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 ${isMaximized ? 'scale-100' : 'scale-90'} transition-all duration-500` }>
         {/* Local Video */}
-        <div className={`aspect-video rounded-lg overflow-hidden relative backdrop-blur-md bg-white/10 border border-white/20 ${
-          isFullscreen ? 'hover:ring-2 hover:ring-blue-500 transition-all' : ''
+        <div className={`aspect-video rounded-2xl overflow-hidden relative backdrop-blur-2xl bg-gradient-to-br from-white/70 via-white/50 to-white/40 dark:from-white/15 dark:via-white/10 dark:to-white/5 border border-black/10 dark:border-white/30 shadow-2xl hover:shadow-3xl transition-all duration-500 ${
+          isFullscreen ? 'hover:ring-4 hover:ring-gray-400/50 hover:scale-105' : 'hover:scale-105'
         }`}>
           <video
             ref={localVideoRef}
@@ -93,16 +84,13 @@ const VideoConference = ({
             }}
           />
           {isVideoOff && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-              <FontAwesomeIcon icon={faVideoSlash} className="text-4xl text-white" />
+            <div className="absolute inset-0 flex items-center justify-center backdrop-blur-md bg-gray-800/60 rounded-2xl">
+              <FontAwesomeIcon icon={faVideoSlash} className="text-4xl text-white/80" />
             </div>
           )}
-          <div className="absolute top-2 right-2 flex gap-2">
-            <div className="bg-red-500 text-white text-xs px-2 py-1 rounded">
-              YOU
-            </div>
+          <div className="absolute top-3 right-3 flex gap-2">
             {isMuted && (
-              <div className="bg-red-500 text-white text-xs px-2 py-1 rounded">
+              <div className="backdrop-blur-md bg-gradient-to-r from-gray-900/80 to-gray-700/80 text-white text-xs px-3 py-1.5 rounded-full border border-white/20 shadow-lg">
                 <FontAwesomeIcon icon={faMicrophoneSlash} />
               </div>
             )}
@@ -113,9 +101,7 @@ const VideoConference = ({
         {Array.from(remoteStreams).map(([participantId, stream]) => (
           <div
             key={participantId}
-            className={`aspect-video rounded-lg overflow-hidden relative backdrop-blur-md bg-white/10 border border-white/20 ${
-              isFullscreen ? 'hover:ring-2 hover:ring-blue-500 transition-all' : ''
-            }`}
+            className={`aspect-video rounded-2xl overflow-hidden relative backdrop-blur-2xl bg-gradient-to-br from-white/70 via-white/50 to-white/40 dark:from-white/15 dark:via-white/10 dark:to-white/5 border border-black/10 dark:border-white/30 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105`}
           >
             <video
               autoPlay
@@ -124,11 +110,28 @@ const VideoConference = ({
               ref={el => {
                 if (el && el.srcObject !== stream) {
                   el.srcObject = stream;
+                  const vTrack = stream.getVideoTracks()[0];
+                  if (vTrack) {
+                    el.style.display = vTrack.enabled ? 'block' : 'none';
+                    const handleMute = () => { el.style.display = 'none'; };
+                    const handleUnmute = () => { el.style.display = 'block'; };
+                    const handleEnded = () => { el.style.display = 'none'; };
+                    vTrack.addEventListener('mute', handleMute);
+                    vTrack.addEventListener('unmute', handleUnmute);
+                    vTrack.addEventListener('ended', handleEnded);
+                    el._cleanupTrackListeners = () => {
+                      vTrack.removeEventListener('mute', handleMute);
+                      vTrack.removeEventListener('unmute', handleUnmute);
+                      vTrack.removeEventListener('ended', handleEnded);
+                    };
+                  }
                   el.play().catch(e => console.error('Error playing remote video:', e));
+                } else if (el && el._cleanupTrackListeners) {
+                  el._cleanupTrackListeners();
+                  el._cleanupTrackListeners = null;
                 }
               }}
             />
-            {/* Ensure remote audio is played */}
             <audio
               autoPlay
               ref={el => {
@@ -138,50 +141,33 @@ const VideoConference = ({
                 }
               }}
             />
-            <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
-              LIVE
-            </div>
           </div>
         ))}
       </div>
 
-      {/* Control Bar */}
+      {/* Unified Bottom Control Bar - centered */}
       {showControls && (
-        <div className={`fixed ${isFullscreen ? 'bottom-6 left-6 right-6' : 'bottom-0 left-0 right-0'} backdrop-blur-md bg-black/50 p-4 rounded-lg`}>
-          <div className="max-w-screen-xl mx-auto flex justify-between items-center">
-            <div className="flex gap-4">
-              <button
-                onClick={handleToggleAudio}
-                className={`p-3 rounded-full ${
-                  isMuted ? 'bg-red-500' : 'bg-white/20'
-                } hover:bg-opacity-80 transition-colors`}
-              >
-                <FontAwesomeIcon 
-                  icon={isMuted ? faMicrophoneSlash : faMicrophone} 
-                  className="text-white" 
-                />
-              </button>
-              <button
-                onClick={handleToggleVideo}
-                className={`p-3 rounded-full ${
-                  isVideoOff ? 'bg-red-500' : 'bg-white/20'
-                } hover:bg-opacity-80 transition-colors`}
-              >
-                <FontAwesomeIcon 
-                  icon={isVideoOff ? faVideoSlash : faVideo} 
-                  className="text-white" 
-                />
-              </button>
-            </div>
-
-            <div className="flex gap-4">
-              <button
-                onClick={onLeaveRequest}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-              >
-                End Call
-              </button>
-            </div>
+        <div className={`fixed bottom-0 left-0 right-0 backdrop-blur-2xl bg-gradient-to-r from-black/40 via-black/30 to-black/40 dark:from-black/50 dark:via-black/40 dark:to-black/50 border-t border-white/20 p-4 sm:p-5 rounded-t-2xl shadow-2xl`}>
+          <div className="max-w-screen-xl mx-auto flex items-center justify-center gap-4">
+            <button
+              onClick={handleToggleAudio}
+              className="p-4 rounded-full bg-white/20 hover:bg-white/30 border border-white/30 transition-colors"
+            >
+              <FontAwesomeIcon icon={isMuted ? faMicrophoneSlash : faMicrophone} className="text-white text-lg" />
+            </button>
+            <button
+              onClick={handleToggleVideo}
+              className="p-4 rounded-full bg-white/20 hover:bg-white/30 border border-white/30 transition-colors"
+            >
+              <FontAwesomeIcon icon={isVideoOff ? faVideoSlash : faVideo} className="text-white text-lg" />
+            </button>
+            <button
+              onClick={onLeaveRequest}
+              title="End Call"
+              className="p-4 rounded-full bg-red-600 hover:bg-red-700 border border-red-500/70 transition-colors shadow-lg"
+            >
+              <FontAwesomeIcon icon={faPhoneSlash} className="text-white text-lg" />
+            </button>
           </div>
         </div>
       )}

@@ -8,14 +8,15 @@ class WebRTCService {
     this.videoTrack = null;
     this.audioTrack = null;
 
-    // STUN/TURN servers for NAT traversal (TURN optional via env)
+    // Traversal Using Relays around NAT (TURN Servers)
     const turnUrl = process.env.REACT_APP_TURN_URL;
     const turnUser = process.env.REACT_APP_TURN_USERNAME;
     const turnPass = process.env.REACT_APP_TURN_CREDENTIAL;
 
     this.configuration = {
       iceServers: [
-        // Google STUN servers
+        
+        // Session Traversal Utilities for NAT (STUN)
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
         { urls: 'stun:stun2.l.google.com:19302' },
@@ -25,8 +26,7 @@ class WebRTCService {
         // Additional STUN servers for better connectivity
         { urls: 'stun:stun.services.mozilla.com' },
         { urls: 'stun:stunserver.org' },
-        
-        // Add TURN server if configured
+
         ...(turnUrl && turnUser && turnPass
           ? [{
               urls: turnUrl,
@@ -36,9 +36,9 @@ class WebRTCService {
           : [])
       ],
       iceCandidatePoolSize: 10,
-      iceTransportPolicy: 'all',
-      bundlePolicy: 'max-bundle',
-      rtcpMuxPolicy: 'require',
+      iceTransportPolicy: 'all', // 'relay' used for enterprise security
+      bundlePolicy: 'max-bundle', // use only one connection for all 3 (video, audio, chat) 
+      rtcpMuxPolicy: 'require', // reduces extra ports/channels, all things in one (media and control info) 
     };
   }
 
@@ -64,7 +64,7 @@ class WebRTCService {
       console.log('Media permissions granted:', {
         videoTrack: this.videoTrack?.enabled,
         audioTrack: this.audioTrack?.enabled
-      });
+      }, {videoTrack: this.videoTrack, audioTrack: this.audioTrack});
 
       return this.localStream;
     } catch (error) {
