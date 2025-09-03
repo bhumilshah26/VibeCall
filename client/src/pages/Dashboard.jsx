@@ -38,6 +38,8 @@ const Dashboard = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const categories = ['All','Study','Work','Focus','Music','Business','Fitness','Creative','Technology','Language','Other'];
+  const settingsButtonRef = useRef(null);
+  const settingsMenuRef = useRef(null);
 
   // Initialize theme from localStorage
   useEffect(() => {
@@ -263,6 +265,29 @@ const Dashboard = () => {
     return () => window.removeEventListener('open-create-room', openCreate);
   }, []);
 
+  // Close settings when clicking outside
+  useEffect(() => {
+    if (!showSettings) return;
+    
+    const handleClickOutside = (event) => {
+      const settingsButton = settingsButtonRef.current;
+      const settingsMenu = settingsMenuRef.current;
+      
+      if (settingsMenu && !settingsMenu.contains(event.target) && 
+          settingsButton && !settingsButton.contains(event.target)) {
+        setShowSettings(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showSettings]);
+
   return (
     <div className="flex-1 bg-white dark:bg-gray-900 p-4 sm:p-6 transition-colors">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -276,7 +301,7 @@ const Dashboard = () => {
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-center relative">
             <button
               onClick={() => setShowJoinModal(true)}
-              className="w-full sm:w-auto px-4 py-2 bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white dark:bg-blue-500 dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
             >
               <FontAwesomeIcon icon={faSignInAlt} />
               <span className="hidden sm:inline">Join Room</span>
@@ -284,7 +309,7 @@ const Dashboard = () => {
             </button>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="w-full sm:w-auto px-4 py-2 bg-gray-700 text-white dark:bg-gray-300 dark:text-gray-900 rounded-lg hover:bg-gray-600 dark:hover:bg-gray-400 transition-colors flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white dark:bg-green-500 dark:text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
             >
               <FontAwesomeIcon icon={faPlus} />
               <span className="hidden sm:inline">Create Room</span>
@@ -294,6 +319,7 @@ const Dashboard = () => {
               onClick={() => setShowSettings(prev => !prev)}
               className="p-2 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
               title="Settings"
+              ref={settingsButtonRef}
             >
               <FontAwesomeIcon icon={faCog} className="text-gray-900 dark:text-gray-100" />
             </button>
@@ -305,7 +331,8 @@ const Dashboard = () => {
             </button>
 
             {showSettings && (
-              <div className="absolute right-0 top-12 w-64 bg-white dark:bg-gray-800 backdrop-blur-md rounded-lg shadow-lg p-3 z-10 border border-black/10 dark:border-white/10">
+              <div className="absolute right-0 top-12 w-64 bg-white dark:bg-gray-800 backdrop-blur-md rounded-lg shadow-lg p-3 z-10 border border-black/10 dark:border-white/10"
+                   ref={settingsMenuRef}>
                 <div className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">Settings</div>
                 <div className="flex items-center justify-between py-2">
                   <span className="text-sm text-gray-700 dark:text-gray-300">Dark mode</span>
