@@ -85,7 +85,6 @@ A real-time video conferencing application designed for focused collaboration an
 3. Create a `.env` file in the client directory:
    ```env
    REACT_APP_API_URL=http://localhost:5000
-   REACT_APP_SERVER_URL=http://localhost:5000
    ```
 
 4. Start the development server:
@@ -127,20 +126,28 @@ A real-time video conferencing application designed for focused collaboration an
 - `GET /api/rooms` - Get all available rooms
 - `GET /api/rooms/join/:code` - Join a room by code
 - `GET /api/rooms/:code` - Get room details by code
+- `POSt api/rooms/:code/leave` - Leave the current room
+
 
 ## Room Schema
 
 ```javascript
 {
-  code: String,           // 6-character unique room code
-  name: String,           // Room name
-  focusGoal: String,      // Primary objective of the room
-  category: String,       // Room category (Study, Work, etc.)
-  agenda: String,         // Optional agenda description
-  scheduledAt: Date,      // Optional scheduled time
-  isActive: Boolean,      // Room status
-  participantCount: Number, // Current participant count
-  createdAt: Date         // Creation timestamp
+   code: { type: String, required: true, unique: true }, // 6-character unique room code
+   name: { type: String, required: true },               // name of the room
+   agenda: String,                                       // Optional agenda description
+   focusGoal: { type: String, required: true },          // Primary objective of the room
+   category: { type: String, required: true },           // Room category
+   scheduledAt: Date,                                    // Optional scheduled time
+   isLive: { type: Boolean, default: true },             // If it is Live meet or a scheduled one
+   isActive: { type: Boolean, default: true },           // If the room is currently running?
+   participantCount: { type: Number, default: 0 },       // Number of participants in the room
+   owner: { type: String, default: 'Anonymous' },        // User who created the room
+   color: { type: String, default: '#2563eb' },          // Color based on category
+   createdAt: {                                          // Creation timestamp
+      type:Date,
+      default:Date.now,
+   },
 }
 ```
 
@@ -159,6 +166,3 @@ This project is licensed under the ISC License.
 ## Support
 
 For issues and questions, please open an issue on the GitHub repository.
-
-
-

@@ -7,6 +7,7 @@ class WebRTCService {
     this.onStreamReceived = null;
     this.videoTrack = null;
     this.audioTrack = null;
+    this.onIceCandidate = null;
 
     // Traversal Using Relays around NAT (TURN Servers)
     const turnUrl = process.env.REACT_APP_TURN_URL;

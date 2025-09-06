@@ -6,7 +6,6 @@ router.post('/create', createRoom);
 router.get('/', allRooms);
 router.get('/join/:code', joinRoom);
 router.get('/:code', getRoomByCode);
-
 router.post('/:code/leave', leaveRoom);
 
 module.exports = router;

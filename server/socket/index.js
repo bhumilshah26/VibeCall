@@ -64,15 +64,12 @@ module.exports = function (io) {
         });
 
         socket.on('leave-room', ({ roomCode }) => {
-            console.log(1);
             handleUserLeaving(socket, roomCode);
         });
 
         socket.on('disconnecting', () => {
-            console.log(2);
             const roomCode = userRooms.get(socket.id);
             if (roomCode) {
-                console.log(3, roomCode);
                 handleUserLeaving(socket, roomCode);
             }
             console.log(`User disconnected: ${socket.id}`);

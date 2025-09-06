@@ -85,6 +85,7 @@ const Dashboard = () => {
   // Keep ref in sync with latest localStream
   useEffect(() => {
     localStreamRef.current = localStream;
+    console.log('Local stream:', localStream);
   }, [localStream]);
 
   // Connect signaling once on mount; cleanup on unmount only
