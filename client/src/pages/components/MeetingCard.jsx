@@ -5,12 +5,43 @@ import {
   faBullseye, 
   faCopy,
   faCalendar,
-  faPlay
+  faPlay,
+  faClock,
+  faPlayCircle
 } from '@fortawesome/free-solid-svg-icons';
 
-const MeetingCard = ({ meeting, onJoinRequest }) => {
+const MeetingCard = ({ meeting, onJoinRequest, onActivateRoom }) => {
   const handleCopyCode = () => {
     navigator.clipboard.writeText(meeting.code);
+  };
+
+  const handleActivateRoom = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms/${meeting.code}/activate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        console.log('Room activated successfully');
+        // The room will be updated via socket events
+      } else {
+        const error = await response.json();
+        alert(`Failed to activate room: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error activating room:', error);
+      alert('Failed to activate room. Please try again.');
+    }
+  };
+
+  const isScheduledRoomReady = () => {
+    if (meeting.isLive || !meeting.scheduledAt) return false;
+    const now = new Date();
+    const scheduledTime = new Date(meeting.scheduledAt);
+    return scheduledTime <= now;
   };
 
   const formatDate = (dateString) => {
@@ -42,6 +73,7 @@ const MeetingCard = ({ meeting, onJoinRequest }) => {
   };
 
   const canJoin = meeting.isLive === true;
+  const canActivate = !meeting.isLive && isScheduledRoomReady();
   const accentColor = meeting.color || '#2563eb';
 
   return (
@@ -59,8 +91,8 @@ const MeetingCard = ({ meeting, onJoinRequest }) => {
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(meeting.category)}`}>
               {meeting.category}
             </span>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${canJoin ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-              {canJoin ? 'Live' : 'Scheduled'}
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${canJoin ? 'bg-green-100 text-green-800' : canActivate ? 'bg-orange-100 text-orange-800' : 'bg-yellow-100 text-yellow-800'}`}>
+              {canJoin ? 'Live' : canActivate ? 'Ready' : 'Scheduled'}
             </span>
           </div>
         </div>
@@ -119,17 +151,35 @@ const MeetingCard = ({ meeting, onJoinRequest }) => {
         </div>
       </div>
 
-      {/* Join Button - Fixed at bottom */}
+      {/* Action Button - Fixed at bottom */}
       <div className="p-4 flex-shrink-0">
-        <button
-          onClick={() => onJoinRequest(meeting)}
-          disabled={!canJoin}
-          style={canJoin ? { backgroundColor: accentColor } : {}}
-          className={`w-full text-white py-2 px-4 rounded-md transition-colors flex items-center justify-center gap-2 ${canJoin ? 'hover:opacity-95' : 'bg-gray-400 cursor-not-allowed'}`}
-        >
-          <FontAwesomeIcon icon={faPlay} />
-          {canJoin ? 'Join Room' : 'Not Live'}
-        </button>
+        {canJoin ? (
+          <button
+            onClick={() => onJoinRequest(meeting)}
+            style={{ backgroundColor: accentColor }}
+            className="w-full text-white py-2 px-4 rounded-md transition-colors flex items-center justify-center gap-2 hover:opacity-95"
+          >
+            <FontAwesomeIcon icon={faPlay} />
+            Join Room
+          </button>
+        ) : canActivate ? (
+          <button
+            onClick={handleActivateRoom}
+            style={{ backgroundColor: accentColor }}
+            className="w-full text-white py-2 px-4 rounded-md transition-colors flex items-center justify-center gap-2 hover:opacity-95"
+          >
+            <FontAwesomeIcon icon={faPlayCircle} />
+            Activate Room
+          </button>
+        ) : (
+          <button
+            disabled
+            className="w-full text-white py-2 px-4 rounded-md transition-colors flex items-center justify-center gap-2 bg-gray-400 cursor-not-allowed"
+          >
+            <FontAwesomeIcon icon={faClock} />
+            Scheduled
+          </button>
+        )}
       </div>
     </div>
   );

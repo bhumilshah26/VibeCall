@@ -42,8 +42,32 @@ const createRoom = async (req, res) => {
     }
 };
 
+// Function to activate scheduled rooms that are due
+const activateScheduledRooms = async () => {
+    try {
+        const now = new Date();
+        const roomsToActivate = await Room.find({
+            isActive: true,
+            isLive: false,
+            scheduledAt: { $lte: now }
+        });
+
+        for (const room of roomsToActivate) {
+            room.isLive = true;
+            await room.save();
+            emitRoomEvent('room-updated', room);
+            console.log(`Activated scheduled room: ${room.name} (${room.code})`);
+        }
+    } catch (error) {
+        console.error('Error activating scheduled rooms:', error);
+    }
+};
+
 const allRooms = async (_req, res) => {
     try {
+        // First, activate any scheduled rooms that are due
+        await activateScheduledRooms();
+        
         const rooms = await Room.find({ isActive: true }).sort({ createdAt: -1} );
         res.status(200).json(rooms);
     } catch (e) {
@@ -55,12 +79,18 @@ const joinRoom = async (req, res) => {
     const { code } = req.params;
     
     try {
+        // First, activate any scheduled rooms that are due
+        await activateScheduledRooms();
+        
         const room = await Room.findOne({ code, isActive: true });
         if (!room) {
             return res.status(404).json({ error: "Room not found or inactive" });
         }
         if (!room.isLive) {
-            return res.status(400).json({ error: `Room is scheduled and not live yet` });
+            const scheduledTime = room.scheduledAt ? new Date(room.scheduledAt).toLocaleString() : 'Unknown';
+            return res.status(400).json({ 
+                error: `Room is scheduled for ${scheduledTime} and not live yet` 
+            });
         }
         
         room.participantCount += 1;
@@ -113,11 +143,37 @@ const leaveRoom = async (req, res) => {
     }
 };
 
+const activateRoom = async (req, res) => {
+    const { code } = req.params;
+    
+    try {
+        const room = await Room.findOne({ code, isActive: true });
+        if (!room) {
+            return res.status(404).json({ error: "Room not found" });
+        }
+        
+        if (room.isLive) {
+            return res.status(400).json({ error: "Room is already live" });
+        }
+        
+        room.isLive = true;
+        await room.save();
+        
+        // Emit room updated event to all clients
+        emitRoomEvent('room-updated', room);
+        
+        res.status(200).json({ message: "Room activated successfully", room });
+    } catch (e) {
+        res.status(500).json({ error: "Failed to activate room" });
+    }
+};
+
 module.exports = { 
     createRoom, 
     allRooms, 
     joinRoom, 
     getRoomByCode, 
     leaveRoom,
+    activateRoom,
     setIO,
 };

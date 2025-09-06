@@ -11,6 +11,7 @@ const roomRoutes = require('./routes/roomRoutes');
 const userRoutes = require('./routes/userRoutes');
 const socketHandler = require('./socket/index');
 const { setIO } = require('./controllers/roomController');
+const Room = require('./models/Room');
 
 dotenv.config();
 
@@ -48,6 +49,30 @@ app.use('/api/users', userRoutes);
 socketHandler(io);
 
 setIO(io);
+
+// Function to check and activate scheduled rooms
+const checkScheduledRooms = async () => {
+    try {
+        const now = new Date();
+        const roomsToActivate = await Room.find({
+            isActive: true,
+            isLive: false,
+            scheduledAt: { $lte: now }
+        });
+
+        for (const room of roomsToActivate) {
+            room.isLive = true;
+            await room.save();
+            io.emit('room-updated', room);
+            console.log(`Auto-activated scheduled room: ${room.name} (${room.code})`);
+        }
+    } catch (error) {
+        console.error('Error checking scheduled rooms:', error);
+    }
+};
+
+// Check for scheduled rooms every minute
+setInterval(checkScheduledRooms, 60000);
 
 mongoose.connect(process.env.MONGO_URI, {})
 .then(() => {

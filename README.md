@@ -11,6 +11,7 @@ A real-time video conferencing application designed for focused collaboration an
 - **Scheduling**: Optional scheduling for future sessions
 
 ### 🔗 Room Connection
+- **Scheduled Rooms**: Checks for scheduled rooms every minute and sends socket updates
 - **Join by Code**: Enter room codes to join existing sessions
 - **Dashboard View**: See all available rooms with real-time information
 - **Participant Tracking**: Monitor who's in each room
