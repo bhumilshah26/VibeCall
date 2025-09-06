@@ -49,7 +49,6 @@ class SignalingService {
 
     // Handle existing participants when joining
     this.socket.on('existing-participants', ({ participants }) => {
-      console.log('Existing participants:', participants);
       // Initiate calls to all existing participants
       participants.forEach(participantId => {
         if (participantId !== this.socket.id) {

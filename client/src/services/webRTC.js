@@ -62,11 +62,7 @@ class WebRTCService {
       this.videoTrack = this.localStream.getVideoTracks()[0];
       this.audioTrack = this.localStream.getAudioTracks()[0];
 
-      console.log('Media permissions granted:', {
-        videoTrack: this.videoTrack?.enabled,
-        audioTrack: this.audioTrack?.enabled
-      }, {videoTrack: this.videoTrack, audioTrack: this.audioTrack});
-
+      this.audioTrack.enabled = false;
       return this.localStream;
     } catch (error) {
       console.error('Error accessing media devices:', error);

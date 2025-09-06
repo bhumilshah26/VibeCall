@@ -85,7 +85,6 @@ const Dashboard = () => {
   // Keep ref in sync with latest localStream
   useEffect(() => {
     localStreamRef.current = localStream;
-    console.log('Local stream:', localStream);
   }, [localStream]);
 
   // Connect signaling once on mount; cleanup on unmount only
@@ -114,14 +113,12 @@ const Dashboard = () => {
   }, []);
 
   const handleStreamReceived = (participantId, stream) => {
-    console.log('Received stream from participant:', participantId);
     setRemoteStreams(prev => new Map(prev).set(participantId, stream));
   };
 
   // Add useEffect to handle local video stream
   useEffect(() => {
     if (localStream && localVideoRef.current) {
-      console.log('Setting local stream to video element');
       localVideoRef.current.srcObject = localStream;
       streamRef.current = localStream;
     }
@@ -169,14 +166,12 @@ const Dashboard = () => {
       const savedName = localStorage.getItem('vc_displayName');
       const joinName = savedName || currentUser;
       
-      console.log('Joining room:', meetingToJoin.code, 'as:', joinName);
       
       await signalingService.joinRoom(meetingToJoin.code, joinName);
       setSelectedMeeting(meetingToJoin);
       setShowJoinConfirmation(false);
       setMeetingToJoin(null);
       
-      console.log('Successfully joined room:', meetingToJoin.code);
     } catch (error) {
       console.error('Error joining meeting:', error);
       alert('Failed to join meeting. Please try again.');
@@ -242,7 +237,6 @@ const Dashboard = () => {
   }, [isVideoOff]);
 
   const handleCreateRoom = (newRoom) => {
-    // Room will be added via real-time update from socket
     console.log('Room created:', newRoom);
   };
 
