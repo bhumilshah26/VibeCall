@@ -35,7 +35,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const currentUser = 'User' + Math.random().toString(36).substr(2, 5);
   const [showSettings, setShowSettings] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const categories = ['All','Study','Work','Focus','Music','Business','Fitness','Creative','Technology','Language','Other'];
   const settingsButtonRef = useRef(null);
@@ -284,78 +284,86 @@ const Dashboard = () => {
   }, [showSettings]);
 
   return (
-    <div className="flex-1 bg-white dark:bg-gray-900 p-4 sm:p-6 transition-colors">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {selectedMeeting ? selectedMeeting.name : 'Focus Rooms'}  
-          </h2>
-        </div>
-        
-        {!selectedMeeting && (
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-center relative">
-            <button
-              onClick={() => setShowJoinModal(true)}
-              className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white dark:bg-blue-500 dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
-            >
-              <FontAwesomeIcon icon={faSignInAlt} />
-              <span className="hidden sm:inline">Join Room</span>
-              <span className="sm:hidden">Join</span>
-            </button>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white dark:bg-green-500 dark:text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
-            >
-              <FontAwesomeIcon icon={faPlus} />
-              <span className="hidden sm:inline">Create Room</span>
-              <span className="sm:hidden">Create</span>
-            </button>
-            <button
-              onClick={() => setShowSettings(prev => !prev)}
-              className="p-2 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
-              title="Settings"
-              ref={settingsButtonRef}
-            >
-              <FontAwesomeIcon icon={faCog} className="text-gray-900 dark:text-gray-100" />
-            </button>
-            <button
-              className="p-2 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
-              title="Guest"
-            >
-              <FontAwesomeIcon icon={faUser} className="text-gray-900 dark:text-gray-100" />
-            </button>
-
-            {showSettings && (
-              <div className="absolute right-0 top-12 w-64 bg-white dark:bg-gray-800 backdrop-blur-md rounded-lg shadow-lg p-3 z-10 border border-black/10 dark:border-white/10"
-                   ref={settingsMenuRef}>
-                <div className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">Settings</div>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Dark mode</span>
-                  <button
-                    onClick={() => setIsDarkMode(v => !v)}
-                    className={`w-11 h-6 rounded-full transition-colors ${isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}`}
-                    title="Toggle dark mode"
-                  >
-                    <span className={`block w-5 h-5 bg-white rounded-full transform transition-transform ${isDarkMode ? 'translate-x-5' : 'translate-x-1'}`} />
-                  </button>
-                </div>
-                <div className="py-2">
-                  <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">Filter by category</div>
-                  <select
-                    value={selectedCategory}
-                    onChange={e => setSelectedCategory(e.target.value)}
-                    className="w-full text-sm border border-gray-300 dark:border-gray-700 rounded-md p-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                  >
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            )}
+    <div className="flex-1 bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 min-h-screen p-4 sm:p-6 lg:p-8 transition-colors">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-light text-gray-900 dark:text-gray-50 tracking-tight">
+              {selectedMeeting ? (
+                <span className="font-medium">{selectedMeeting.name}</span>
+              ) : (
+                <>
+                  <span className="font-medium">Focus</span>
+                  <span className="text-gray-400 dark:text-gray-500">Rooms</span>
+                </>
+              )}
+            </h1>
           </div>
-        )}
-      </div>
+          
+          {!selectedMeeting && (
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-center relative">
+              <button
+                onClick={() => setShowJoinModal(true)}
+                className="group w-full sm:w-auto px-5 py-2.5 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg shadow-indigo-600/20 dark:shadow-indigo-500/20 hover:shadow-xl hover:shadow-indigo-600/30 dark:hover:shadow-indigo-500/30 hover:-translate-y-0.5"
+              >
+                <FontAwesomeIcon icon={faSignInAlt} />
+                <span className="hidden sm:inline">Join Room</span>
+                <span className="sm:hidden">Join</span>
+              </button>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="group w-full sm:w-auto px-5 py-2.5 bg-slate-700 dark:bg-slate-600 text-white rounded-xl hover:bg-slate-800 dark:hover:bg-slate-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg shadow-slate-700/20 dark:shadow-slate-600/20 hover:shadow-xl hover:shadow-slate-700/30 dark:hover:shadow-slate-600/30 hover:-translate-y-0.5"
+              >
+                <FontAwesomeIcon icon={faPlus} />
+                <span className="hidden sm:inline">Create Room</span>
+                <span className="sm:hidden">Create</span>
+              </button>
+              <button
+                onClick={() => setShowSettings(prev => !prev)}
+                className="p-2.5 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                title="Settings"
+                ref={settingsButtonRef}
+              >
+                <FontAwesomeIcon icon={faCog} className="text-gray-700 dark:text-gray-300 text-sm" />
+              </button>
+              <button
+                className="p-2.5 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                title="Guest"
+              >
+                <FontAwesomeIcon icon={faUser} className="text-gray-700 dark:text-gray-300 text-sm" />
+              </button>
+
+              {showSettings && (
+                <div className="absolute right-0 top-14 w-72 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-gray-900/20 dark:shadow-gray-950/50 p-4 z-10 border border-gray-200/50 dark:border-gray-700/50"
+                     ref={settingsMenuRef}>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-50 mb-4 uppercase tracking-wider text-xs">Settings</div>
+                  <div className="flex items-center justify-between py-3 border-b border-gray-200/50 dark:border-gray-700/50">
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Dark mode</span>
+                    <button
+                      onClick={() => setIsDarkMode(v => !v)}
+                      className={`w-12 h-6 rounded-full transition-all duration-300 ${isDarkMode ? 'bg-gray-800 dark:bg-gray-200' : 'bg-gray-300 dark:bg-gray-600'}`}
+                      title="Toggle dark mode"
+                    >
+                      <span className={`block w-5 h-5 bg-white dark:bg-gray-50 rounded-full transform transition-transform duration-300 shadow-lg ${isDarkMode ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                    </button>
+                  </div>
+                  <div className="py-3">
+                    <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">Filter by category</div>
+                    <select
+                      value={selectedCategory}
+                      onChange={e => setSelectedCategory(e.target.value)}
+                      className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 transition-all"
+                    >
+                      {categories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
       {selectedMeeting ? (
         <VideoConference
@@ -374,22 +382,28 @@ const Dashboard = () => {
         <>
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="text-gray-900 dark:text-gray-100 text-lg">Loading rooms...</div>
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-3 border-gray-300 dark:border-gray-700 border-t-gray-900 dark:border-t-gray-100 rounded-full animate-spin"></div>
+                <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Loading rooms...</div>
+              </div>
             </div>
           ) : meetings.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-gray-900 dark:text-gray-100 text-lg mb-4">No focus rooms available</div>
-              <p className="text-gray-500 dark:text-gray-400 mb-6">Create your first focus room to get started!</p>
+            <div className="text-center py-16 px-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 mb-4">
+                <FontAwesomeIcon icon={faPlus} className="text-2xl text-gray-400 dark:text-gray-600" />
+              </div>
+              <h3 className="text-xl font-medium text-gray-900 dark:text-gray-50 mb-2">No focus rooms available</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-md mx-auto">Create your first focus room to get started with productive sessions!</p>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="px-6 py-3 bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-300 transition-colors flex items-center gap-2 mx-auto"
+                className="group px-6 py-3 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all duration-200 flex items-center gap-2 mx-auto font-medium shadow-lg shadow-indigo-600/20 dark:shadow-indigo-500/20 hover:shadow-xl hover:shadow-indigo-600/30 dark:hover:shadow-indigo-500/30 hover:-translate-y-0.5"
               >
                 <FontAwesomeIcon icon={faPlus} />
                 Create Your First Room
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
               {(selectedCategory === 'All' ? meetings : meetings.filter(m => m.category === selectedCategory)).map((meeting) => (
                 <MeetingCard 
                   key={meeting._id || meeting.id} 
@@ -441,6 +455,7 @@ const Dashboard = () => {
         onClose={() => setShowJoinModal(false)}
         onJoinRoom={handleJoinRoom}
       />
+      </div>
     </div>
   );
 };
